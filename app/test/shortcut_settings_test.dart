@@ -173,7 +173,9 @@ binds {
       await tester.pumpAndSettle();
 
       expect(find.text('系统与偏好设置'), findsOneWidget);
-      expect(find.text('推荐常用组合：'), findsOneWidget);
+      expect(find.text('全局唤起快捷键录制：'), findsOneWidget);
+      expect(find.text('点击此处开始在键盘上录制按键'), findsOneWidget);
+      expect(find.text('或选择推荐常用组合：'), findsOneWidget);
       expect(find.text('Super+Alt+V'), findsOneWidget);
       expect(find.text('保存并立即生效'), findsOneWidget);
 
@@ -181,8 +183,10 @@ binds {
       await tester.tap(find.text('Super+Alt+V'));
       await tester.pumpAndSettle();
 
-      final input = tester.widget<TextField>(find.byType(TextField));
-      expect(input.controller?.text, equals('Super+Alt+V'));
+      // Keycap for Super, Alt, V are rendered
+      expect(find.text('Super'), findsWidgets);
+      expect(find.text('Alt'), findsWidgets);
+      expect(find.text('V'), findsOneWidget);
 
       // Close dialog
       await tester.tap(find.text('取消'));

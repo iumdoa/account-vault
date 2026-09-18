@@ -65,7 +65,10 @@ class ManagementView extends StatelessWidget {
         Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.blueAccent),
+              icon: const Icon(
+                Icons.arrow_back_rounded,
+                color: Colors.blueAccent,
+              ),
               tooltip: '返回快捷面板',
               onPressed: onBackToQuickPanel,
             ),
@@ -107,22 +110,10 @@ class ManagementView extends StatelessWidget {
               ),
             ],
             const Spacer(),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('新建账号'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                foregroundColor: Colors.white,
-                visualDensity: VisualDensity.compact,
-              ),
-              onPressed: () =>
-                  EntryFormDialog.show(context, controller: controller),
-            ),
             if (!controller.isMockMode) ...[
-              const SizedBox(width: 6),
               IconButton(
                 icon: const Icon(
-                  Icons.file_download_outlined,
+                  Icons.archive_outlined,
                   color: Colors.lightBlueAccent,
                   size: 20,
                 ),
@@ -132,7 +123,7 @@ class ManagementView extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(
-                  Icons.settings_backup_restore,
+                  Icons.unarchive_outlined,
                   color: Colors.orangeAccent,
                   size: 20,
                 ),
@@ -140,10 +131,10 @@ class ManagementView extends StatelessWidget {
                 onPressed: () =>
                     BackupRestoreDialog.show(context, controller: controller),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               IconButton(
                 icon: const Icon(
-                  Icons.lock_outline,
+                  Icons.lock_outline_rounded,
                   color: Colors.amberAccent,
                   size: 20,
                 ),
@@ -154,20 +145,20 @@ class ManagementView extends StatelessWidget {
                 },
               ),
             ],
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             IconButton(
               icon: const Icon(
-                Icons.tune_outlined,
+                Icons.tune_rounded,
                 color: Colors.cyanAccent,
                 size: 20,
               ),
               tooltip: '偏好设置与快捷键',
               onPressed: () => SettingsDialog.show(context),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             IconButton(
               icon: const Icon(
-                Icons.power_settings_new,
+                Icons.power_settings_new_rounded,
                 color: Colors.redAccent,
                 size: 20,
               ),
@@ -355,7 +346,7 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
               const Spacer(),
               IconButton(
                 icon: const Icon(
-                  Icons.edit,
+                  Icons.edit_rounded,
                   size: 16,
                   color: Colors.blueAccent,
                 ),
@@ -365,7 +356,7 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
               ),
               IconButton(
                 icon: const Icon(
-                  Icons.delete_outline,
+                  Icons.delete_outline_rounded,
                   size: 16,
                   color: Colors.redAccent,
                 ),
@@ -382,7 +373,11 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
               padding: const EdgeInsets.only(bottom: 4),
               child: Row(
                 children: [
-                  Icon(Icons.link, size: 12, color: Colors.grey.shade500),
+                  Icon(
+                    Icons.link_rounded,
+                    size: 12,
+                    color: Colors.grey.shade500,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     entry.address!,
@@ -402,7 +397,7 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.person_outline,
+                      Icons.person_outline_rounded,
                       size: 12,
                       color: Colors.grey.shade500,
                     ),
@@ -416,7 +411,7 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                     ),
                     IconButton(
                       icon: const Icon(
-                        Icons.copy,
+                        Icons.copy_rounded,
                         size: 14,
                         color: Colors.grey,
                       ),
@@ -430,7 +425,11 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.key, size: 12, color: Colors.grey.shade500),
+                    Icon(
+                      Icons.key_rounded,
+                      size: 12,
+                      color: Colors.grey.shade500,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       _revealPassword
@@ -447,8 +446,8 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                     IconButton(
                       icon: Icon(
                         _revealPassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                            ? Icons.visibility_off_rounded
+                            : Icons.visibility_rounded,
                         size: 14,
                         color: Colors.grey,
                       ),
@@ -462,7 +461,7 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                     ),
                     IconButton(
                       icon: const Icon(
-                        Icons.copy,
+                        Icons.copy_rounded,
                         size: 14,
                         color: Colors.grey,
                       ),

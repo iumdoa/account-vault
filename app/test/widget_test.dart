@@ -25,6 +25,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('核心三层交换机 / 管理员'), findsOneWidget);
+    expect(find.text('新建账号'), findsOneWidget);
 
     // 2. Search filtering
     await tester.enterText(find.byType(TextField), '交换机');
@@ -35,20 +36,13 @@ void main() {
     expect(find.text('汇聚交换机 01 (楼宇B)'), findsOneWidget);
     expect(find.text('AWS 生产云控制台'), findsNothing);
 
-    // 3. Open Management View
-    await tester.tap(find.text('管理页面'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('账号库管理'), findsOneWidget);
-    expect(find.text('新建账号'), findsOneWidget);
-
-    // 4. Open New Entry Dialog
+    // 3. Open New Entry Dialog directly from QuickPanelView
     await tester.tap(find.text('新建账号'));
     await tester.pumpAndSettle();
 
     expect(find.text('新增账号记录'), findsOneWidget);
 
-    // 5. Test validation on empty title
+    // 4. Test validation on empty title
     await tester.tap(find.text('保存'));
     await tester.pumpAndSettle();
 
@@ -58,10 +52,41 @@ void main() {
     await tester.tap(find.text('取消'));
     await tester.pumpAndSettle();
 
+    // 5. Open Management View
+    await tester.tap(find.text('管理页面'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('账号库管理'), findsOneWidget);
+
     // 6. Return to Quick Panel
     await tester.tap(find.byTooltip('返回快捷面板'));
     await tester.pumpAndSettle();
 
     expect(find.text('管理页面'), findsOneWidget);
+    expect(find.text('新建账号'), findsOneWidget);
+
+    // 7. Test Group Filter Chips on Quick Panel
+    expect(find.text('全部'), findsOneWidget);
+    expect(find.text('网络设备'), findsWidgets);
+
+    // Tap on '网络设备' group chip
+    await tester.tap(find.text('网络设备').first);
+    await tester.pumpAndSettle();
+
+    expect(controller.selectedGroup, equals('网络设备'));
+    expect(find.text('核心三层交换机 / 管理员'), findsOneWidget);
+    expect(find.text('AWS 生产云控制台'), findsNothing);
+
+    // Tap on '全部' chip to reset group filter
+    await tester.tap(find.text('全部'));
+    await tester.pumpAndSettle();
+
+    expect(controller.selectedGroup, isNull);
+
+    // Clear search query to restore all entries
+    await tester.enterText(find.byType(TextField), '');
+    await tester.pumpAndSettle();
+
+    expect(find.text('AWS 生产云控制台'), findsOneWidget);
   });
 }

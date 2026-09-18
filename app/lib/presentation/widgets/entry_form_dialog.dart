@@ -4,7 +4,7 @@ import '../../application/vault_session_controller.dart';
 import '../../domain/models/vault_entry.dart';
 import '../../domain/services/uuid_service.dart';
 
-/// Modal dialog for adding or editing a vault entry (README Section 3.3)
+/// Modal dialog for adding or editing a vault entry (Streamlined without redundant notes/tags)
 class EntryFormDialog extends StatefulWidget {
   final VaultSessionController controller;
   final VaultEntry? initialEntry;
@@ -38,8 +38,6 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
   late final TextEditingController _usernameController;
   late final TextEditingController _passwordController;
   late final TextEditingController _groupController;
-  late final TextEditingController _tagsController;
-  late final TextEditingController _notesController;
 
   bool _obscurePassword = true;
   String? _errorMessage;
@@ -53,8 +51,6 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
     _usernameController = TextEditingController(text: e?.username ?? '');
     _passwordController = TextEditingController(text: e?.password ?? '');
     _groupController = TextEditingController(text: e?.group ?? '');
-    _tagsController = TextEditingController(text: e?.tags.join(', ') ?? '');
-    _notesController = TextEditingController(text: e?.notes ?? '');
   }
 
   @override
@@ -64,8 +60,6 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
     _usernameController.dispose();
     _passwordController.dispose();
     _groupController.dispose();
-    _tagsController.dispose();
-    _notesController.dispose();
     super.dispose();
   }
 
@@ -74,25 +68,23 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
       _errorMessage = null;
     });
 
-    final tagsList = _tagsController.text
-        .split(RegExp(r'[,，]'))
-        .map((t) => t.trim())
-        .where((t) => t.isNotEmpty)
-        .toList();
-
     final entryToSave = VaultEntry(
       id: widget.initialEntry?.id ?? UuidService.generateV4(),
       title: _titleController.text,
-      address: _addressController.text.isEmpty ? null : _addressController.text,
+      address: _addressController.text.trim().isEmpty
+          ? null
+          : _addressController.text,
       username: _usernameController.text.isEmpty
           ? null
           : _usernameController.text,
       password: _passwordController.text.isEmpty
           ? null
           : _passwordController.text,
-      group: _groupController.text.isEmpty ? null : _groupController.text,
-      tags: tagsList,
-      notes: _notesController.text.isEmpty ? null : _notesController.text,
+      group: _groupController.text.trim().isEmpty
+          ? null
+          : _groupController.text.trim(),
+      tags: widget.initialEntry?.tags ?? const [],
+      notes: widget.initialEntry?.notes,
       createdAt: widget.initialEntry?.createdAt,
       updatedAt: DateTime.now().toUtc(),
     );
@@ -113,29 +105,36 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.initialEntry != null;
+    final availableGroups = widget.controller.availableGroups;
 
     return AlertDialog(
       backgroundColor: const Color(0xFF21252B),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         side: const BorderSide(color: Color(0xFF3E4451)),
       ),
       title: Row(
         children: [
           Icon(
-            isEditing ? Icons.edit_note : Icons.add_circle_outline,
+            isEditing
+                ? Icons.edit_note_rounded
+                : Icons.add_circle_outline_rounded,
             color: Colors.blueAccent,
-            size: 22,
+            size: 24,
           ),
           const SizedBox(width: 8),
           Text(
             isEditing ? '编辑账号记录' : '新增账号记录',
-            style: const TextStyle(color: Colors.white, fontSize: 16),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
       content: SizedBox(
-        width: 480,
+        width: 460,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -156,7 +155,7 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
                   child: Row(
                     children: [
                       const Icon(
-                        Icons.error_outline,
+                        Icons.error_outline_rounded,
                         color: Colors.redAccent,
                         size: 16,
                       ),
@@ -174,56 +173,93 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
                   ),
                 ),
 
+              // Title (Required)
               _buildTextField(
                 controller: _titleController,
                 label: '标题 (必填)',
-                hint: '例如：核心交换机 / 管理员、GitHub 个人账号',
+                hint: '例如：GitHub 个人账号 / 核心交换机',
                 autofocus: true,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
+              // Group and Address
               Row(
                 children: [
                   Expanded(
                     child: _buildTextField(
-                      controller: _addressController,
-                      label: '地址 / IP / 网址 (可空)',
-                      hint: '192.168.1.1 或 github.com',
+                      controller: _groupController,
+                      label: '分组 (可选)',
+                      hint: '日常办公 / 网络设备 / 开发工具',
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: _buildTextField(
-                      controller: _groupController,
-                      label: '分组 (可空)',
-                      hint: '网络设备、开发工具、云计算等',
+                      controller: _addressController,
+                      label: '网址 / IP / 登录地址 (可选)',
+                      hint: 'github.com 或 192.168.1.1',
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              if (availableGroups.isNotEmpty && !isEditing) ...[
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  children: availableGroups.take(5).map((g) {
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(4),
+                      onTap: () {
+                        setState(() {
+                          _groupController.text = g;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF282C34),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: const Color(0xFF3E4451)),
+                        ),
+                        child: Text(
+                          '+ $g',
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+              const SizedBox(height: 12),
 
+              // Username and Password
               Row(
                 children: [
                   Expanded(
                     child: _buildTextField(
                       controller: _usernameController,
-                      label: '账号 / 用户名',
-                      hint: 'admin 或 devops@corp',
+                      label: '账号 / 用户名 (可选)',
+                      hint: 'admin 或 user@example.com',
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: _buildTextField(
                       controller: _passwordController,
-                      label: '密码凭据',
+                      label: '密码 (可选)',
                       hint: '输入复杂密码',
                       obscureText: _obscurePassword,
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
                           size: 18,
                           color: Colors.grey.shade400,
                         ),
@@ -237,21 +273,6 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-
-              _buildTextField(
-                controller: _tagsController,
-                label: '标签 (多个用逗号分隔)',
-                hint: 'cisco, switch, core',
-              ),
-              const SizedBox(height: 10),
-
-              _buildTextField(
-                controller: _notesController,
-                label: '备注说明 (多行纯文本)',
-                hint: '记录端口、环境要求或备用说明...',
-                maxLines: 3,
-              ),
             ],
           ),
         ),
@@ -262,11 +283,12 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
           child: Text('取消', style: TextStyle(color: Colors.grey.shade400)),
         ),
         ElevatedButton.icon(
-          icon: const Icon(Icons.check, size: 16),
+          icon: const Icon(Icons.check_rounded, size: 16),
           label: const Text('保存'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blueAccent,
             foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           ),
           onPressed: _handleSave,
         ),

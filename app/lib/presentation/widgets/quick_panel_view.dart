@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../application/vault_session_controller.dart';
 import '../../domain/models/vault_entry.dart';
+import 'entry_form_dialog.dart';
 import 'settings_dialog.dart';
 
 /// Quick Search and Copy Panel View (README Section 3.2)
@@ -45,6 +46,8 @@ class QuickPanelView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final availableGroups = controller.availableGroups;
+
     return Focus(
       autofocus: true,
       onKeyEvent: (node, event) {
@@ -54,6 +57,14 @@ class QuickPanelView extends StatelessWidget {
 
         // IME composing check
         final isComposing = searchController.value.composing.isValid;
+
+        // Ctrl+N: quickly open Create Account dialog
+        if (event.logicalKey == LogicalKeyboardKey.keyN &&
+            !isComposing &&
+            HardwareKeyboard.instance.isControlPressed) {
+          EntryFormDialog.show(context, controller: controller);
+          return KeyEventResult.handled;
+        }
 
         if (event.logicalKey == LogicalKeyboardKey.arrowDown && !isComposing) {
           controller.selectNext();
@@ -76,54 +87,117 @@ class QuickPanelView extends StatelessWidget {
       },
       child: Column(
         children: [
-          // Top Search Input
-          TextField(
-            controller: searchController,
-            focusNode: searchFocusNode,
-            autofocus: true,
-            style: const TextStyle(fontSize: 15, color: Colors.white),
-            decoration: InputDecoration(
-              hintText: '搜索标题、IP、网址片段、账号、标签或备注...',
-              hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-              prefixIcon: const Icon(
-                Icons.search,
-                color: Colors.blueAccent,
-                size: 22,
-              ),
-              suffixIcon: searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
-                      onPressed: () {
-                        searchController.clear();
-                        controller.setQuery('');
-                      },
-                    )
-                  : null,
-              filled: true,
-              fillColor: const Color(0xFF21252B),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFF3E4451)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(
-                  color: Colors.blueAccent,
-                  width: 2,
+          // Top Row: Search Input + New Account Button
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: searchController,
+                  focusNode: searchFocusNode,
+                  autofocus: true,
+                  style: const TextStyle(fontSize: 14, color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: '搜索标题、IP、网址片段、账号...',
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 13,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      color: Colors.blueAccent,
+                      size: 20,
+                    ),
+                    suffixIcon: searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 16),
+                            onPressed: () {
+                              searchController.clear();
+                              controller.setQuery('');
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: const Color(0xFF21252B),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 11,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFF3E4451)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Colors.blueAccent,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  onChanged: (val) {
+                    controller.setQuery(val);
+                  },
                 ),
               ),
-            ),
-            onChanged: (val) {
-              controller.setQuery(val);
-            },
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text(
+                  '新建账号',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: () =>
+                    EntryFormDialog.show(context, controller: controller),
+              ),
+            ],
           ),
+
+          // Group Filter Chips Row
+          if (availableGroups.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 28,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  _buildGroupChip(
+                    label: '全部',
+                    isSelected: controller.selectedGroup == null,
+                    onTap: () => controller.setGroupFilter(null),
+                  ),
+                  const SizedBox(width: 6),
+                  ...availableGroups.map((group) {
+                    final isSelected = controller.selectedGroup == group;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: _buildGroupChip(
+                        label: group,
+                        isSelected: isSelected,
+                        onTap: () {
+                          controller.setGroupFilter(isSelected ? null : group);
+                        },
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
 
-          // In-memory Phase 1 notice badge
+          // In-memory Phase 1 notice badge (if any)
           if (controller.isMockMode)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -134,7 +208,11 @@ class QuickPanelView extends StatelessWidget {
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline, size: 14, color: Colors.amberAccent),
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 14,
+                    color: Colors.amberAccent,
+                  ),
                   SizedBox(width: 6),
                   Text(
                     '阶段 1 内存模式：内置 20 条覆盖设备、网站与应用的虚构凭据，修改不持久化到硬盘',
@@ -143,7 +221,7 @@ class QuickPanelView extends StatelessWidget {
                 ],
               ),
             ),
-          const SizedBox(height: 8),
+          if (controller.isMockMode) const SizedBox(height: 8),
 
           // Result List
           Expanded(
@@ -151,7 +229,9 @@ class QuickPanelView extends StatelessWidget {
                 ? Center(
                     child: Text(
                       controller.currentQuery.isEmpty
-                          ? '暂无任何账号记录'
+                          ? (controller.selectedGroup != null
+                                ? '分组 "${controller.selectedGroup}" 下暂无记录'
+                                : '暂无任何账号记录')
                           : '未找到匹配 "${controller.currentQuery}" 的记录',
                       style: TextStyle(
                         color: Colors.grey.shade500,
@@ -191,13 +271,13 @@ class QuickPanelView extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '↑↓ 切换 · Enter 复制密码 · Ctrl+Enter 复制账号 · Esc 隐藏',
+                    '↑↓ 切换 · Enter 复制密码 · Ctrl+Enter 复制账号 · Ctrl+N 新建 · Esc 隐藏',
                     style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.tune_outlined, size: 16),
+                  icon: const Icon(Icons.tune_rounded, size: 16),
                   color: Colors.grey.shade400,
                   tooltip: '快捷键与偏好设置',
                   visualDensity: VisualDensity.compact,
@@ -205,7 +285,7 @@ class QuickPanelView extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 TextButton.icon(
-                  icon: const Icon(Icons.table_chart_outlined, size: 16),
+                  icon: const Icon(Icons.table_rows_rounded, size: 16),
                   label: const Text('管理页面', style: TextStyle(fontSize: 12)),
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.blueAccent,
@@ -217,6 +297,40 @@ class QuickPanelView extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGroupChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Colors.blueAccent.withValues(alpha: 0.25)
+              : const Color(0xFF21252B),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isSelected ? Colors.blueAccent : const Color(0xFF3E4451),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey.shade400,
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -327,7 +441,7 @@ class _EntryListItem extends StatelessWidget {
                         if (entry.address != null &&
                             entry.address!.isNotEmpty) ...[
                           Icon(
-                            Icons.link,
+                            Icons.link_rounded,
                             size: 12,
                             color: Colors.grey.shade500,
                           ),
@@ -346,7 +460,7 @@ class _EntryListItem extends StatelessWidget {
                         ],
                         if (hasUsername) ...[
                           Icon(
-                            Icons.person_outline,
+                            Icons.person_outline_rounded,
                             size: 12,
                             color: Colors.grey.shade500,
                           ),
@@ -375,14 +489,14 @@ class _EntryListItem extends StatelessWidget {
               if (hasUsername)
                 IconButton(
                   tooltip: '复制账号 (Ctrl+Enter)',
-                  icon: const Icon(Icons.person_pin_outlined, size: 18),
+                  icon: const Icon(Icons.person_outline_rounded, size: 18),
                   color: isSelected ? Colors.blueAccent : Colors.grey.shade400,
                   onPressed: onCopyAccount,
                 ),
               IconButton(
                 tooltip: hasPassword ? '复制密码 (Enter)' : '无密码',
                 icon: Icon(
-                  Icons.key,
+                  Icons.key_rounded,
                   size: 18,
                   color: hasPassword
                       ? (isSelected ? Colors.greenAccent : Colors.grey.shade400)
@@ -400,14 +514,14 @@ class _EntryListItem extends StatelessWidget {
   IconData _getCategoryIcon(VaultEntry entry) {
     final g = (entry.group ?? '').toLowerCase();
     if (g.contains('网络') || g.contains('设备')) {
-      return Icons.router;
+      return Icons.router_rounded;
     } else if (g.contains('开发') || g.contains('工具')) {
-      return Icons.code;
+      return Icons.terminal_rounded;
     } else if (g.contains('云')) {
-      return Icons.cloud_queue;
+      return Icons.cloud_outlined;
     } else if (g.contains('数据') || g.contains('存储')) {
-      return Icons.storage;
+      return Icons.storage_rounded;
     }
-    return Icons.lock_outline;
+    return Icons.lock_outline_rounded;
   }
 }

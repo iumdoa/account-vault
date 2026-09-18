@@ -283,4 +283,40 @@
      - 测试套件扩展至 49 项，8 秒内全部绿灯通过；
      - 采用无缝原子发布（Blue-Green Release）部署至 `~/.local/opt/account-vault/releases/1.0.1/` 并更新软链接，用户主数据完全隔离不受影响。
 
+---
+
+## 阶段 5 优化：界面交互重构、快捷键录制与功能减负
+
+- **当前阶段**：阶段 5 优化：界面交互重构、快捷键录制与功能减负（已完成验收）
+- **本次完成**：
+  1. **管理页面与快捷面板图标现代重塑**：
+     - 全面替换尖锐陈旧图标为现代 Material 3 圆角风格图标（`Icons.*_rounded`）；
+     - 统一导航返回、加密导出（`archive_outlined`）、整库恢复（`unarchive_outlined`）、锁库（`lock_outline_rounded`）、设置（`tune_rounded`）、退出（`power_settings_new_rounded`）、编辑、删除与复制等图标语义与尺寸。
+  2. **键盘快捷键硬件捕获与按键录制识别 (`HotkeyRecorder`)**：
+     - 在 `SettingsDialog` 引入实时键盘捕获卡片，点击即可开启按键监听；
+     - 原生捕获用户物理键盘按键（Super/Meta、Alt、Ctrl、Shift + 字母/数字/功能键/Space 等），实时识别并映射为 niri 标准规范按键组合；
+     - 辅以常用一键预设 Chips 与冲突预检，免去手动输入的繁琐与格式错误隐患。
+  3. **表单功能减负与精简 (`EntryFormDialog`)**：
+     - 移除了冗余的“标签”与“备注说明”多行输入框，专注账号核心字段：标题（必填）、分组、账号、密码（显隐切换）、网址/IP；
+     - 保持底层模型与历史记录向后兼容，大幅精简表单高度与填写成本，一屏直达保存。
+  4. **新建账号入口外置 (`QuickPanelView`)**：
+     - 按照用户使用动线，将“新建账号”按钮由深层管理页移至主面板搜索框右侧，支持点击及 <kbd>Ctrl</kbd> + <kbd>N</kbd> 快捷键即开；
+     - 从管理页顶部移除重复新建按钮，使管理页专注数据灾备与系统维护。
+  5. **外层主界面集成多维分组过滤**：
+     - 在快捷搜索面板搜索框下方新增横向滚动分组 Filter Chips（“全部”及各分组项）；
+     - 点击即时联动 `VaultSessionController.setGroupFilter`，实现外层主界面无缝分组筛选与联合多词搜索。
+- **修改文件**：
+  - `app/lib/presentation/widgets/entry_form_dialog.dart`
+  - `app/lib/presentation/widgets/management_view.dart`
+  - `app/lib/presentation/widgets/quick_panel_view.dart`
+  - `app/lib/presentation/widgets/settings_dialog.dart`
+  - `app/test/shortcut_settings_test.dart`
+  - `app/test/widget_test.dart`
+  - `docs/progress.md`
+- **实际验证命令和结果**：
+  - `flutter analyze`: `No issues found! (ran in 1.7s)`;
+  - `flutter test`: 49 项测试全数通过 (0 失败，耗时 8 秒)；
+  - 发布更新: 部署至 `~/.local/opt/account-vault/releases/1.0.2/`，更新软链接 `current`，用户真实数据库（`vault.avlt` 与 `vault.previous.avlt`）完全完好保留。
+
+
 
