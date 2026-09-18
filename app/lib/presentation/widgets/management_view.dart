@@ -5,6 +5,7 @@ import '../../domain/models/vault_entry.dart';
 import 'backup_export_dialog.dart';
 import 'backup_restore_dialog.dart';
 import 'entry_form_dialog.dart';
+import 'settings_dialog.dart';
 
 /// Full Management View (README Section 3.3)
 class ManagementView extends StatelessWidget {
@@ -153,7 +154,17 @@ class ManagementView extends StatelessWidget {
                 },
               ),
             ],
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
+            IconButton(
+              icon: const Icon(
+                Icons.tune_outlined,
+                color: Colors.cyanAccent,
+                size: 20,
+              ),
+              tooltip: '偏好设置与快捷键',
+              onPressed: () => SettingsDialog.show(context),
+            ),
+            const SizedBox(width: 6),
             IconButton(
               icon: const Icon(
                 Icons.power_settings_new,

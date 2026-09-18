@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../application/vault_session_controller.dart';
 import '../../domain/models/vault_entry.dart';
+import 'settings_dialog.dart';
 
 /// Quick Search and Copy Panel View (README Section 3.2)
 class QuickPanelView extends StatelessWidget {
@@ -195,8 +196,16 @@ class QuickPanelView extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.tune_outlined, size: 16),
+                  color: Colors.grey.shade400,
+                  tooltip: '快捷键与偏好设置',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => SettingsDialog.show(context),
+                ),
+                const SizedBox(width: 4),
                 TextButton.icon(
-                  icon: const Icon(Icons.settings_outlined, size: 16),
+                  icon: const Icon(Icons.table_chart_outlined, size: 16),
                   label: const Text('管理页面', style: TextStyle(fontSize: 12)),
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.blueAccent,

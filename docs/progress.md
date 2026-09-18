@@ -255,3 +255,32 @@
 - **阶段验收结论**：
   - Section 12 MVP 验收矩阵 22 项验收指标全部满足，本地加密凭据管理器 v1.0.0 正式就绪，用户可安心投入日常使用。
 
+---
+
+## 阶段 5 增补：系统偏好设置与全局快捷键自定义功能
+
+- **当前阶段**：阶段 5 增补：系统偏好设置与全局快捷键自定义功能（已完成验收）
+- **本次完成**：
+  1. **快捷键配置与防护服务 (`ShortcutConfigService`)**：
+     - 支持读取当前 niri 配置 (`~/.config/niri/config.kdl`) 中的 Account Vault 绑定；
+     - 提供系统按键冲突预检 (`checkConflict`)，防范与现有应用（如终端、截图工具）热键冲突；
+     - 实现**双重防护保存流水线**：
+       1. 生成配置候选临时文件（`.candidate`）；
+       2. 调用 `niri validate -c <candidate>` 验证配置语法与无重复按键；
+       3. 校验失败直接抛出异常、清理候选文件并回滚，绝不破坏用户现有配置；
+       4. 校验成功自动生成时间戳备份（`.bak`）并原子提交，niri 即时热重载生效；
+     - 自动同步至应用设置 (`settings.json`)。
+  2. **偏好设置弹窗 (`SettingsDialog`)**：
+     - 提供推荐常用快捷组合 Chips（`Super+Alt+P`、`Super+Alt+V`、`Super+Space`、`Super+P`、`Ctrl+Alt+P`、`Super+Shift+P`、`Super+K`）；
+     - 提供可视化修饰键勾选（Super/Alt/Ctrl/Shift）及自定义按键输入；
+     - 实时按键冲突诊断提示与 niri 桌面环境适配徽章；
+     - 展示存储路径、窗口规则与保护机制说明。
+  3. **UI 入口集成**：
+     - 在 `ManagementView` 顶部工具栏增加偏好设置按钮（`tune_outlined`）；
+     - 在 `QuickPanelView` 底部栏增加快捷入口按钮。
+  4. **全套自动化测试与平滑发布**：
+     - 编写 `test/shortcut_settings_test.dart`（覆盖按键解析、冲突检测、合法/非法校验与回滚、UI 交互流程）；
+     - 测试套件扩展至 49 项，8 秒内全部绿灯通过；
+     - 采用无缝原子发布（Blue-Green Release）部署至 `~/.local/opt/account-vault/releases/1.0.1/` 并更新软链接，用户主数据完全隔离不受影响。
+
+
