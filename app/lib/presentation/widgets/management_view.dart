@@ -86,6 +86,23 @@ class ManagementView extends StatelessWidget {
                 style: const TextStyle(color: Colors.blueAccent, fontSize: 11),
               ),
             ),
+            if (!controller.isMockMode && controller.revision > 0) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '版本 #${controller.revision}',
+                  style: const TextStyle(
+                    color: Colors.greenAccent,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
             const Spacer(),
             ElevatedButton.icon(
               icon: const Icon(Icons.add, size: 16),
@@ -98,6 +115,21 @@ class ManagementView extends StatelessWidget {
               onPressed: () =>
                   EntryFormDialog.show(context, controller: controller),
             ),
+            if (!controller.isMockMode) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(
+                  Icons.lock_outline,
+                  color: Colors.amberAccent,
+                  size: 20,
+                ),
+                tooltip: '锁定密码库',
+                onPressed: () {
+                  controller.lock();
+                  onBackToQuickPanel();
+                },
+              ),
+            ],
             const SizedBox(width: 8),
             IconButton(
               icon: const Icon(

@@ -2,17 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'application/vault_session_controller.dart';
-import 'infrastructure/mock/mock_vault_repository.dart';
+import 'infrastructure/storage/encrypted_file_vault_repository.dart';
+import 'infrastructure/storage/vault_path_provider.dart';
+import 'presentation/widgets/create_vault_view.dart';
 import 'presentation/widgets/management_view.dart';
 import 'presentation/widgets/quick_panel_view.dart';
+import 'presentation/widgets/unlock_view.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final repository = MockVaultRepository();
+  final pathProvider = VaultPathProvider();
+  final repository = EncryptedFileVaultRepository(pathProvider: pathProvider);
   final controller = VaultSessionController(
     repository: repository,
-    isMockMode: true,
+    isMockMode: false,
   );
+
+  await controller.initialize();
 
   runApp(AccountVaultApp(controller: controller));
 }
@@ -63,12 +69,19 @@ class _AppRootScaffoldState extends State<AppRootScaffold> {
   @override
   void initState() {
     super.initState();
-    widget.controller.loadEntries();
+    if (widget.controller.state == VaultSessionState.initializing) {
+      widget.controller.initialize();
+    } else if (widget.controller.isUnlocked &&
+        widget.controller.allEntries.isEmpty) {
+      widget.controller.loadEntries();
+    }
     widget.controller.addListener(_onControllerChanged);
     _windowChannel.setMethodCallHandler(_handleNativeMethodCall);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _focusSearchBox();
+      if (widget.controller.isUnlocked) {
+        _focusSearchBox();
+      }
     });
   }
 
@@ -110,7 +123,9 @@ class _AppRootScaffoldState extends State<AppRootScaffold> {
           // Returning to quick panel view on hotkey show
           _isManagementView = false;
         });
-        _focusSearchBox();
+        if (widget.controller.isUnlocked) {
+          _focusSearchBox();
+        }
       }
       return true;
     }
@@ -118,7 +133,7 @@ class _AppRootScaffoldState extends State<AppRootScaffold> {
   }
 
   void _focusSearchBox() {
-    if (!_isManagementView) {
+    if (!_isManagementView && widget.controller.isUnlocked) {
       if (!_searchFocusNode.hasFocus) {
         _searchFocusNode.requestFocus();
       }
@@ -141,9 +156,59 @@ class _AppRootScaffoldState extends State<AppRootScaffold> {
 
   Future<void> _quitApp() async {
     try {
+      widget.controller.lock();
       await _windowChannel.invokeMethod('quitApp');
     } catch (e) {
       debugPrint('Error quitting app: $e');
+    }
+  }
+
+  Widget _buildContent() {
+    switch (widget.controller.state) {
+      case VaultSessionState.initializing:
+        return const Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Color(0xFF1E88E5),
+          ),
+        );
+      case VaultSessionState.uninitialized:
+        return CreateVaultView(
+          controller: widget.controller,
+          onHideWindow: _hideWindow,
+          onQuitApp: _quitApp,
+        );
+      case VaultSessionState.locked:
+        return UnlockView(
+          controller: widget.controller,
+          onHideWindow: _hideWindow,
+          onQuitApp: _quitApp,
+        );
+      case VaultSessionState.unlocked:
+        return _isManagementView
+            ? ManagementView(
+                controller: widget.controller,
+                onBackToQuickPanel: () {
+                  setState(() {
+                    _isManagementView = false;
+                  });
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _focusSearchBox();
+                  });
+                },
+                onQuitApp: _quitApp,
+              )
+            : QuickPanelView(
+                controller: widget.controller,
+                searchController: _searchController,
+                searchFocusNode: _searchFocusNode,
+                onOpenManagement: () {
+                  setState(() {
+                    _isManagementView = true;
+                  });
+                },
+                onHideWindow: _hideWindow,
+              );
     }
   }
 
@@ -156,30 +221,7 @@ class _AppRootScaffoldState extends State<AppRootScaffold> {
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(12.0),
-              child: _isManagementView
-                  ? ManagementView(
-                      controller: widget.controller,
-                      onBackToQuickPanel: () {
-                        setState(() {
-                          _isManagementView = false;
-                        });
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _focusSearchBox();
-                        });
-                      },
-                      onQuitApp: _quitApp,
-                    )
-                  : QuickPanelView(
-                      controller: widget.controller,
-                      searchController: _searchController,
-                      searchFocusNode: _searchFocusNode,
-                      onOpenManagement: () {
-                        setState(() {
-                          _isManagementView = true;
-                        });
-                      },
-                      onHideWindow: _hideWindow,
-                    ),
+              child: _buildContent(),
             ),
           ),
         );

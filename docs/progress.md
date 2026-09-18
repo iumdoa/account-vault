@@ -126,10 +126,56 @@
   - Linux Release 构建：`flutter build linux --release` 编译成功（exit code 0）。
 - **已知问题/最小复现**：
   - 无。
+## 阶段 3：真实存储接入、解锁与创建库流程
+
+- **当前阶段**：阶段 3：真实存储接入、解锁与创建库流程（已完成验收）
+- **本次完成**：
+  1. **状态机与会话控制器生命周期完善**：
+     - 在 `VaultSessionController` 实现 `VaultSessionState` 枚举：`initializing`、`uninitialized`、`locked`、`unlocked`；
+     - 启动自检机制 `initialize()`：通过 `VaultPathProvider` 与 `EncryptedFileVaultRepository` 探测主库是否存在及上一份备份可用性；
+     - 创建库操作 `createVault`：两次密码一致性校验、最小长度（6 位）拦截、Argon2id 派生及初始化空库，成功后自动进入已解锁状态；
+     - 解锁操作 `unlock`：主密码输入验证，捕获 `AuthenticationFailedException` 拦截并给出“主密码错误，请重新输入”友好提示，绝不损伤破坏原加密库文件；
+     - 回退快照恢复 `restoreFromPrevious`：支持当主库遭遇极端损坏时从 `vault.previous.avlt` 快速恢复；
+     - 手动锁库 `lock`：清除内存敏感会话密钥（`_sessionKey`）、盐值与记录列表，回退至 `locked` 状态；
+     - 进程常驻策略严格对齐 README：解锁后在进程生命周期内永不自动锁屏或锁库，唤起直接展示搜索面板，仅在用户显式退出或显式锁定后才需重新输入主密码。
+  2. **UI 视图实现与集成**：
+     - 实现 `CreateVaultView`（`app/lib/presentation/widgets/create_vault_view.dart`）：
+       - 包含主密码与确认主密码两道输入、密码显隐切换；
+       - 安全警示卡片：“主密码用于 Argon2id 派生密钥。本应用无云端存储，丢失主密码将永久无法找回数据”；
+       - 创建期间显示加载动效并禁用重复提交；
+       - 支持 Esc 隐藏窗口和“退出程序”。
+     - 实现 `UnlockView`（`app/lib/presentation/widgets/unlock_view.dart`）：
+       - 密码输入框自动获焦、回车直接触发解锁；
+       - 密码显隐切换；
+       - 密钥派生期间显示“正在派生密钥并验证...”动效；
+       - 解锁失败红框警示，清空输入框并重定向焦点；
+       - 若存在可用备份，提供“从上一份快照恢复 (vault.previous.avlt)”安全入口；
+       - 支持 Esc 隐藏窗口和“退出程序”。
+     - 升级 `ManagementView`：
+       - 显示当前主库的实际版本号徽章（`版本 #X`）；
+       - 工具栏增加“锁定密码库”黄色盾锁按钮，便于用户按需手动锁库；
+       - 保存表单与删除操作无缝接入真实加密流水线，保存失败不假报成功且不丢表单数据。
+     - 升级 `main.dart`：
+       - 默认接入真实 `VaultPathProvider` 与 `EncryptedFileVaultRepository`；
+       - 根据控制器 `state` 动态渲染 `CreateVaultView`、`UnlockView`、`QuickPanelView` 与 `ManagementView`；
+       - 原生 `onShow` 唤起时自动根据解锁状态获焦对应输入框。
+- **修改文件**：
+  - `app/lib/application/vault_session_controller.dart`
+  - `app/lib/main.dart`
+  - `app/lib/presentation/widgets/create_vault_view.dart`
+  - `app/lib/presentation/widgets/unlock_view.dart`
+  - `app/lib/presentation/widgets/management_view.dart`
+  - `app/test/stage3_integration_test.dart`
+  - `docs/progress.md`
+- **实际验证命令和结果**：
+  - `dart format lib test`: 全部格式化；
+  - `flutter analyze`: `No issues found! (ran in 1.8s)`；
+  - `flutter test`: 36 个测试（包含 Stage 1 搜索基准/UI 流程、Stage 2 加解密/原子事务/崩溃注入、Stage 3 真实文件创建/错误密码拒绝/密码解锁/跨会话重启落盘持久化验证/界面渲染与交互）**全数通过，耗时仅 5 秒**；
+  - `flutter build linux --release`: 编译成功，构建出最新二进制文件 `build/linux/x64/release/bundle/account_vault`。
+- **已知问题/最小复现**：
+  - 无。
 - **下一步**：
-  - 进入 **阶段 3：真实存储接入、解锁与创建库流程**：
-    - 将 UI 从 `MockVaultRepository` 接入真实的 `EncryptedFileVaultRepository`；
-    - 启动时自动检测本地库文件是否存在；
-    - 实现新建库页面（初始化主密码、确认主密码、提示与创建）；
-    - 实现解锁库页面（主密码输入、解锁失败抖动/错误提示、成功进入快捷面板与管理页）；
-    - 实现“进程常驻期单次解锁，永不自动锁屏”的会话生命周期。
+  - 进入 **阶段 4：加密备份与整库恢复**：
+    - 在管理页面提供“导出加密备份”与“从备份恢复”入口；
+    - 备份文件采用独立时间戳密文格式，包含自验证 Header 与校验签名；
+    - 导入恢复前先对现有库进行安全备份，验证备份文件可解密后通过事务覆盖生效。
