@@ -174,8 +174,59 @@
   - `flutter build linux --release`: 编译成功，构建出最新二进制文件 `build/linux/x64/release/bundle/account_vault`。
 - **已知问题/最小复现**：
   - 无。
+## 阶段 4：加密备份与整库恢复
+
+- **当前阶段**：阶段 4：加密备份与整库恢复（已完成验收）
+- **本次完成**：
+  1. **加密快照导出与即时自检**：
+     - 在 `EncryptedFileVaultRepository` 实现 `exportBackup(File destinationFile)`；
+     - 拦截将主库（`vault.avlt`）、回退库（`vault.previous.avlt`）或锁文件作为导出目标的危险行为；
+     - 原子生成目标备份，设置 0600 POSIX 严格权限；
+     - **即时读回自检**：写出后立即在工作 Isolate 中完整反序列化并解密自检，验证签名有效性与记录总数，自检失败自动删除损坏临时文件并报错，确保导出的备份 100% 可用；
+     - 备份命名标准化：`account-vault-backup-YYYYMMDD-HHMMSS.avlt`。
+  2. **整库安全恢复与主密码切换流水线**：
+     - 在 `EncryptedFileVaultRepository` 实现 `previewBackup` 与 `restoreFromBackup`；
+     - 恢复前解密校验：输入备份文件的主密码，在独立 Isolate 中解密校验格式、版本与 AAD 头部；
+     - **双重安全防护（Pre-restore Safety Backup）**：整库替换前，自动在数据目录将当前现有主库另存为 `vault.pre-restore.YYYYMMDD-HHMMSS.avlt`（0600 权限），确保用户即使误操作恢复了旧备份也能从本地安全副本中无损挽救数据；
+     - 原子事务替换：备份内容通过写安全流水线替换主库，原主库轮转为 `vault.previous.avlt`；
+     - **密码语义变更落实**：整库恢复后，会话密钥与加密参数原子切换为备份文件所对应的密钥与盐值，恢复成功后下次启动使用该备份的密码解锁（严格遵循 README 9.2 节语义规范）。
+  3. **原生对话框集成与 UI 交互**：
+     - 实现 `NativeDialogService`（`app/lib/platform/native_dialog_service.dart`）：
+       - Linux 环境下优先唤起系统原生 `zenity` 文件保存/选择对话框（支持 `.avlt` 文件过滤器与覆盖确认）；
+       - 无显示环境或缺失 zenity 时无缝回退至内置文本路径输入。
+     - 实现 `BackupExportDialog`（`app/lib/presentation/widgets/backup_export_dialog.dart`）：
+       - 默认推荐导出路径至用户文档目录（`~/Documents/account-vault-backup-*.avlt`）；
+       - 支持“浏览...”文件选择；
+       - 导出期间显示加载进度，防止并发重复提交。
+     - 实现 `BackupRestoreDialog`（`app/lib/presentation/widgets/backup_restore_dialog.dart`）：
+       - 支持文件选择与主密码输入；
+       - “检查并预览备份内容”：在不泄露密码明文的前提下展示记录数、版本号与库 UUID；
+       - 醒目警示“整库恢复将替换当前全部记录，恢复后主密码将切换为此备份的密码”；
+       - 确认恢复后自动弹出 SnackBar 通知安全副本的存储路径。
+     - 在 `ManagementView` 顶部工具栏增加“导出加密备份”与“从备份整库恢复”快捷按钮；
+     - 在启动锁屏 `UnlockView` 增加“从外部备份恢复 (.avlt)”应急通道。
+- **修改文件**：
+  - `app/lib/infrastructure/storage/vault_path_provider.dart`
+  - `app/lib/infrastructure/storage/encrypted_file_vault_repository.dart`
+  - `app/lib/application/vault_session_controller.dart`
+  - `app/lib/platform/native_dialog_service.dart`
+  - `app/lib/presentation/widgets/backup_export_dialog.dart`
+  - `app/lib/presentation/widgets/backup_restore_dialog.dart`
+  - `app/lib/presentation/widgets/management_view.dart`
+  - `app/lib/presentation/widgets/unlock_view.dart`
+  - `app/test/backup_restore_test.dart`
+  - `docs/progress.md`
+- **实际验证命令和结果**：
+  - `dart format lib test`: 全部格式化；
+  - `flutter analyze`: `No issues found! (ran in 1.9s)`；
+  - `flutter test`: 43 个测试（包含 Stage 1 纯搜索/导航/校验、Stage 2 Argon2id/AES-GCM/故障注入、Stage 3 真实库创建/解锁/跨进程重启持久化、Stage 4 备份导出自检/目标防覆盖/整库恢复密码切换/安全副本生成/损坏备份防破坏/UI 对话框全交互）**全数通过，测试耗时仅 8 秒**；
+  - `flutter build linux --release`: 编译成功，输出最新 release bundle。
+- **已知问题/最小复现**：
+  - 无。
 - **下一步**：
-  - 进入 **阶段 4：加密备份与整库恢复**：
-    - 在管理页面提供“导出加密备份”与“从备份恢复”入口；
-    - 备份文件采用独立时间戳密文格式，包含自验证 Header 与校验签名；
-    - 导入恢复前先对现有库进行安全备份，验证备份文件可解密后通过事务覆盖生效。
+  - 进入 **阶段 5：Linux 发布与实际使用验收**：
+    - 验证全局快捷键 `Super+Alt+P` 与 niri 窗口浮动（`680x460` 居中）；
+    - 验证单实例命令与参数转发（`--show`、`--hide`、`--quit`）；
+    - 验证桌面启动器、`.desktop` 图标与持久化存储路径；
+    - 执行第 12 节验收矩阵并准备正式交付。
+

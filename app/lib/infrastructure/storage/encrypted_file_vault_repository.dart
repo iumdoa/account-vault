@@ -216,6 +216,109 @@ class EncryptedFileVaultRepository implements VaultRepository {
     });
   }
 
+  /// Exports an independent, encrypted snapshot backup to [destinationFile] (README Section 9.1).
+  /// Verifies the exported file immediately by decrypting and checking integrity.
+  Future<void> exportBackup(File destinationFile) async {
+    if (!isUnlocked) throw const VaultLockedException();
+
+    // Prevent exporting directly over main, previous, or lock file
+    final destPath = destinationFile.absolute.path;
+    if (destPath == pathProvider.mainVaultFile.absolute.path ||
+        destPath == pathProvider.previousVaultFile.absolute.path ||
+        destPath == pathProvider.lockFile.absolute.path) {
+      throw const CorruptedFormatException('导出目标不能是当前主库或回退库');
+    }
+
+    return _enqueue(() async {
+      final mainFile = pathProvider.mainVaultFile;
+      if (!await mainFile.exists()) {
+        throw const CorruptedFormatException('主库文件不存在，无法导出备份');
+      }
+
+      // Ensure parent directory exists
+      final parentDir = destinationFile.parent;
+      if (!await parentDir.exists()) {
+        await parentDir.create(recursive: true);
+      }
+
+      // Write atomically via a temp file in destination's directory
+      final tempDest = File('${destinationFile.path}.tmp');
+      await mainFile.copy(tempDest.path);
+      await VaultPathProvider.secureFilePermissions(tempDest);
+
+      // Self-verify backup file before finalizing
+      try {
+        final verifyContent = await tempDest.readAsString();
+        final verifyPkg = EncryptedVaultPackage.deserialize(verifyContent);
+        final verified = await VaultCryptoService.decrypt(
+          package: verifyPkg,
+          keyBytes: _sessionKey!,
+        );
+        if (verified.entries.length != _entries.length) {
+          throw const CorruptedFormatException('备份文件自检校验记录数不一致');
+        }
+      } catch (e) {
+        try {
+          await tempDest.delete();
+        } catch (_) {}
+        rethrow;
+      }
+
+      // Finalize atomic move
+      await tempDest.rename(destinationFile.path);
+      await VaultPathProvider.secureFilePermissions(destinationFile);
+    });
+  }
+
+  /// Previews an external backup file without modifying current state (README Section 9.2)
+  Future<DecryptedVaultPayload> previewBackup({
+    required File backupFile,
+    required String masterPassword,
+  }) async {
+    if (!await backupFile.exists()) {
+      throw const CorruptedFormatException('备份文件不存在');
+    }
+
+    final result = await _readAndDecryptFile(backupFile, masterPassword);
+    return result.payload;
+  }
+
+  /// Restores entire vault from external [backupFile] using its [masterPassword] (README Section 9.2).
+  /// Generates a safety pre-restore backup of the existing vault before overwriting.
+  Future<File?> restoreFromBackup({
+    required File backupFile,
+    required String masterPassword,
+  }) async {
+    if (!await backupFile.exists()) {
+      throw const CorruptedFormatException('备份文件不存在');
+    }
+
+    // Decrypt and validate backup first
+    final decrypted = await _readAndDecryptFile(backupFile, masterPassword);
+
+    return _enqueue(() async {
+      File? safetyBackupFile;
+      final mainFile = pathProvider.mainVaultFile;
+      if (await mainFile.exists()) {
+        safetyBackupFile = pathProvider.generatePreRestoreSafetyFile();
+        await mainFile.copy(safetyBackupFile.path);
+        await VaultPathProvider.secureFilePermissions(safetyBackupFile);
+      }
+
+      // Adopt backup credentials and state
+      _sessionKey = decrypted.sessionKey;
+      _salt = decrypted.salt;
+      _vaultId = decrypted.payload.vaultId;
+      _revision = decrypted.payload.revision;
+      _entries = decrypted.payload.entries;
+
+      // Commit as active main vault
+      await _commitTransaction(_entries);
+
+      return safetyBackupFile;
+    });
+  }
+
   /// Atomic transactional save pipeline adhering strictly to README Section 7.2:
   /// 1. Next revision candidate.
   /// 2. Encrypt to new file bytes.

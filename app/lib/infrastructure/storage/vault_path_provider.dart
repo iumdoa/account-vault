@@ -30,6 +30,35 @@ class VaultPathProvider {
       File(p.join(directory.path, 'vault.previous.avlt'));
   File get lockFile => File(p.join(directory.path, 'vault.lock'));
 
+  static String formatTimestamp(DateTime dt) {
+    final y = dt.year.toString().padLeft(4, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    final h = dt.hour.toString().padLeft(2, '0');
+    final min = dt.minute.toString().padLeft(2, '0');
+    final s = dt.second.toString().padLeft(2, '0');
+    return '$y$m$d-$h$min$s';
+  }
+
+  static String generateBackupFilename({DateTime? timestamp}) {
+    final ts = formatTimestamp(timestamp ?? DateTime.now().toUtc());
+    return 'account-vault-backup-$ts.avlt';
+  }
+
+  File generatePreRestoreSafetyFile({DateTime? timestamp}) {
+    final ts = formatTimestamp(timestamp ?? DateTime.now().toUtc());
+    return File(p.join(directory.path, 'vault.pre-restore.$ts.avlt'));
+  }
+
+  static Directory resolveDefaultBackupDirectory() {
+    final home = Platform.environment['HOME'] ?? '';
+    final docs = Directory(p.join(home, 'Documents'));
+    if (docs.existsSync()) return docs;
+    final homeDir = Directory(home);
+    if (homeDir.existsSync()) return homeDir;
+    return Directory.current;
+  }
+
   File generateTempFile() {
     final randId = VaultCryptoService.generateSalt()
         .map((b) => b.toRadixString(16).padLeft(2, '0'))

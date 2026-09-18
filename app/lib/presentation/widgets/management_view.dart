@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../application/vault_session_controller.dart';
 import '../../domain/models/vault_entry.dart';
+import 'backup_export_dialog.dart';
+import 'backup_restore_dialog.dart';
 import 'entry_form_dialog.dart';
 
 /// Full Management View (README Section 3.3)
@@ -116,7 +118,28 @@ class ManagementView extends StatelessWidget {
                   EntryFormDialog.show(context, controller: controller),
             ),
             if (!controller.isMockMode) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
+              IconButton(
+                icon: const Icon(
+                  Icons.file_download_outlined,
+                  color: Colors.lightBlueAccent,
+                  size: 20,
+                ),
+                tooltip: '导出加密备份',
+                onPressed: () =>
+                    BackupExportDialog.show(context, controller: controller),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.settings_backup_restore,
+                  color: Colors.orangeAccent,
+                  size: 20,
+                ),
+                tooltip: '从备份整库恢复',
+                onPressed: () =>
+                    BackupRestoreDialog.show(context, controller: controller),
+              ),
+              const SizedBox(width: 6),
               IconButton(
                 icon: const Icon(
                   Icons.lock_outline,

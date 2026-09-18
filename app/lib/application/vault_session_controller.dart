@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -236,6 +238,93 @@ class VaultSessionController extends ChangeNotifier {
     _selectedIndex = 0;
     _errorMessage = null;
     notifyListeners();
+  }
+
+  /// Exports verified encrypted backup to destination file (README Section 9.1)
+  Future<bool> exportBackup(File destinationFile) async {
+    if (_encryptedRepo == null) return false;
+
+    _isBusy = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _encryptedRepo!.exportBackup(destinationFile);
+      _setFeedback('已成功导出加密备份至: ${destinationFile.path}');
+      return true;
+    } catch (e) {
+      _errorMessage = '导出备份失败: $e';
+      return false;
+    } finally {
+      _isBusy = false;
+      notifyListeners();
+    }
+  }
+
+  /// Previews an external backup file
+  Future<DecryptedVaultPayload?> previewBackup({
+    required File backupFile,
+    required String masterPassword,
+  }) async {
+    if (_encryptedRepo == null) return null;
+
+    _isBusy = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      return await _encryptedRepo!.previewBackup(
+        backupFile: backupFile,
+        masterPassword: masterPassword,
+      );
+    } on AuthenticationFailedException {
+      _errorMessage = '备份密码错误，无法解密该备份文件';
+      return null;
+    } on CorruptedFormatException catch (e) {
+      _errorMessage = '备份文件校验失败: ${e.message}';
+      return null;
+    } catch (e) {
+      _errorMessage = '预览备份失败: $e';
+      return null;
+    } finally {
+      _isBusy = false;
+      notifyListeners();
+    }
+  }
+
+  /// Restores from external backup file (README Section 9.2)
+  Future<({bool success, File? safetyBackupFile})> restoreFromBackup({
+    required File backupFile,
+    required String masterPassword,
+  }) async {
+    if (_encryptedRepo == null) return (success: false, safetyBackupFile: null);
+
+    _isBusy = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final safetyFile = await _encryptedRepo!.restoreFromBackup(
+        backupFile: backupFile,
+        masterPassword: masterPassword,
+      );
+      _hasPreviousBackup = await _encryptedRepo!.previousExists();
+      _state = VaultSessionState.unlocked;
+      _currentQuery = '';
+      _selectedIndex = 0;
+      await loadEntries();
+      _setFeedback('已成功从备份恢复！当前主密码已切换为此备份的密码');
+      return (success: true, safetyBackupFile: safetyFile);
+    } on AuthenticationFailedException {
+      _errorMessage = '备份密码错误，无法解密该备份文件';
+      return (success: false, safetyBackupFile: null);
+    } catch (e) {
+      _errorMessage = '恢复备份失败: $e';
+      return (success: false, safetyBackupFile: null);
+    } finally {
+      _isBusy = false;
+      notifyListeners();
+    }
   }
 
   void clearError() {

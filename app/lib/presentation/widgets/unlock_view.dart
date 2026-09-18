@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../application/vault_session_controller.dart';
+import 'backup_restore_dialog.dart';
 
 /// Screen presented when an encrypted vault exists on disk but is locked
 class UnlockView extends StatefulWidget {
@@ -318,6 +319,26 @@ class _UnlockViewState extends State<UnlockView> {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 6),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: widget.controller.isBusy
+                          ? null
+                          : () => BackupRestoreDialog.show(
+                              context,
+                              controller: widget.controller,
+                            ),
+                      icon: const Icon(Icons.settings_backup_restore, size: 14),
+                      label: const Text(
+                        '从外部备份恢复 (.avlt)',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.blue.shade300,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ),
 
                   const SizedBox(height: 20),
 
