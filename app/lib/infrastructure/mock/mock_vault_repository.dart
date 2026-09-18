@@ -272,9 +272,9 @@ class MockVaultRepository implements VaultRepository {
   @override
   Future<VaultEntry?> getById(String id) async {
     return _entries.cast<VaultEntry?>().firstWhere(
-          (e) => e?.id == id,
-          orElse: () => null,
-        );
+      (e) => e?.id == id,
+      orElse: () => null,
+    );
   }
 
   @override

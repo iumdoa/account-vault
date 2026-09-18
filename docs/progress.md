@@ -76,10 +76,60 @@
   - 中文输入法选词正常，Enter 无误复制；
   - 复制账号/密码后在外部终端与文本编辑器中粘贴完全一致；
   - 管理页面新建、编辑、删除正常运作。
-- **尚未验证的内容**：
-  - 阶段 2：Argon2id KDF 派生密钥与 AES-256-GCM 文件认证加解密；
-  - 阶段 2：工作 Isolate、串行保存队列与原子文件替换。
+## 阶段 2：加密格式和可靠文件仓库
+
+- **当前阶段**：阶段 2：加密格式和可靠文件仓库（已完成验收）
+- **本次完成**：
+  1. **加密格式与规范落盘**：
+     - 完成并冻结 [docs/format-v1.md](file:///home/iumdoa/account-vault/docs/format-v1.md)，明确 JSON 封装、Argon2id (KiB 内存基准)、AES-256-GCM、AAD 头部白名单校验与原始字节直接认证绑定原则；
+     - 依赖引入 `cryptography: ^2.9.0` 与 `path: ^1.9.1`。
+  2. **加密类型与核心服务**：
+     - 在 `app/lib/infrastructure/crypto/` 实现 `vault_crypto_types.dart` 与 `vault_crypto_service.dart`；
+     - 封装 `VaultCryptoService.deriveKey`、`encrypt`、`decrypt`，全面使用后台 `Isolate.run` 执行 CPU 密集型加解密，彻底杜绝主 UI 线程丢帧；
+     - 严格保持 `rawHeaderBytes` 原始 Base64 解码字节直传 GCM AAD，绝不二次序列化；
+     - 实现防御性校验：文件体积上限检查（100MB）、非法/截断 Base64 检测、nonce 长度检测、未知协议版本拒绝。
+  3. **XDG 安全路径与目录隔离**：
+     - 实现 `VaultPathProvider`，遵循 Linux XDG 规范（`$XDG_DATA_HOME/account-vault`，回退至 `~/.local/share/account-vault`）；
+     - 目录创建强制 `0700`，敏感库文件与备份文件强制 `0600`；
+     - 启动时自动清理历史崩溃遗留的临时孤儿文件（`vault.tmp.*`）。
+  4. **事务性文件仓库与写安全流水线**：
+     - 实现 `EncryptedFileVaultRepository`，提供 `createVault`、`unlock`、`save`、`delete`、`restoreFromPrevious`、`lock` 等接口；
+     - 串行事务队列（`_enqueue`）：单 Future 串行链杜绝高并发保存时的竞态覆盖风险；
+     - 7 步可靠落盘流水线：
+       1. 生成 Candidate 快照版本号（revision + 1）；
+       2. Isolate 加密得到密文包；
+       3. 写入独立临时文件 `vault.tmp.<uuid>.avlt` 并 flush；
+       4. **写后自检**：回读临时文件并完整解密，确认版本号无误；
+       5. 若主库存在，原子复制备份至 `vault.previous.avlt`（保障最新可回退快照）；
+       6. 原子重命名覆盖（`rename`）至 `vault.avlt`，**绝不在写入新文件前删除主库**；
+       7. 内存状态原子生效并向应用发布。
+- **修改文件**：
+  - `docs/format-v1.md`
+  - `app/pubspec.yaml`
+  - `app/pubspec.lock`
+  - `app/lib/infrastructure/crypto/vault_crypto_types.dart`
+  - `app/lib/infrastructure/crypto/vault_crypto_service.dart`
+  - `app/lib/infrastructure/storage/vault_path_provider.dart`
+  - `app/lib/infrastructure/storage/encrypted_file_vault_repository.dart`
+  - `app/test/crypto_smoke_test.dart`
+  - `app/test/crypto_test.dart`
+  - `app/test/storage_transaction_test.dart`
+  - `docs/progress.md`
+- **实际验证命令和结果**：
+  - `dart format lib test`: 全部格式化完成；
+  - `flutter analyze`: `No issues found! (ran in 2.5s)`；
+  - `flutter test`: 27 个测试全部通过（包含密码派生、数据无损保留、错误主密码拦截、重放防范/Fresh Nonce、AAD/Ciphertext/Tag/Header 防篡改防御、创建/解锁/增删改查全流程、Previous 备份回退验证、写临时文件崩溃故障注入验证、重命名崩溃故障注入验证、高并发保存串行化队列验证、主库损坏拦截自保护等）；
+  - **加密性能基准**：
+    - Argon2id 密钥派生耗时：**450~520 ms**（在宿主机实测约 500ms，符合安全与体验预期）；
+    - AES-256-GCM 加密耗时：**~2.8 ms**；
+    - AES-256-GCM 解密耗时：**~2.8 ms**；
+  - Linux Release 构建：`flutter build linux --release` 编译成功（exit code 0）。
 - **已知问题/最小复现**：
-  - 无。阶段 1 所有完成标准均通过自动化与基准测试检验。
+  - 无。
 - **下一步**：
-  - 推进 **阶段 2：加密格式和可靠文件仓库**。
+  - 进入 **阶段 3：真实存储接入、解锁与创建库流程**：
+    - 将 UI 从 `MockVaultRepository` 接入真实的 `EncryptedFileVaultRepository`；
+    - 启动时自动检测本地库文件是否存在；
+    - 实现新建库页面（初始化主密码、确认主密码、提示与创建）；
+    - 实现解锁库页面（主密码输入、解锁失败抖动/错误提示、成功进入快捷面板与管理页）；
+    - 实现“进程常驻期单次解锁，永不自动锁屏”的会话生命周期。

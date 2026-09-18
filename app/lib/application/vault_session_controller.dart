@@ -19,10 +19,7 @@ class VaultSessionController extends ChangeNotifier {
   bool _isLoading = false;
   String? _feedbackMessage;
 
-  VaultSessionController({
-    required this.repository,
-    this.isMockMode = true,
-  });
+  VaultSessionController({required this.repository, this.isMockMode = true});
 
   List<VaultEntry> get allEntries => List.unmodifiable(_allEntries);
   List<VaultEntry> get filteredEntries => List.unmodifiable(_filteredEntries);

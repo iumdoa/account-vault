@@ -343,10 +343,17 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                     const SizedBox(width: 4),
                     Text(
                       '账号: ${entry.username!}',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.copy, size: 14, color: Colors.grey),
+                      icon: const Icon(
+                        Icons.copy,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
                       tooltip: '复制账号',
                       onPressed: widget.onCopyAccount,
                       visualDensity: VisualDensity.compact,
@@ -360,7 +367,9 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                     Icon(Icons.key, size: 12, color: Colors.grey.shade500),
                     const SizedBox(width: 4),
                     Text(
-                      _revealPassword ? '密码: ${entry.password!}' : '密码: ••••••••',
+                      _revealPassword
+                          ? '密码: ${entry.password!}'
+                          : '密码: ••••••••',
                       style: TextStyle(
                         color: _revealPassword
                             ? Colors.amberAccent
@@ -371,7 +380,9 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                     ),
                     IconButton(
                       icon: Icon(
-                        _revealPassword ? Icons.visibility_off : Icons.visibility,
+                        _revealPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                         size: 14,
                         color: Colors.grey,
                       ),
@@ -384,7 +395,11 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                       visualDensity: VisualDensity.compact,
                     ),
                     IconButton(
-                      icon: const Icon(Icons.copy, size: 14, color: Colors.grey),
+                      icon: const Icon(
+                        Icons.copy,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
                       tooltip: '复制密码',
                       onPressed: widget.onCopyPassword,
                       visualDensity: VisualDensity.compact,

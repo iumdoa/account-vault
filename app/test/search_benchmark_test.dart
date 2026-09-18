@@ -20,10 +20,10 @@ void main() {
           group: i % 4 == 0
               ? '网络设备'
               : i % 4 == 1
-                  ? '开发工具'
-                  : i % 4 == 2
-                      ? '云计算'
-                      : '数据存储',
+              ? '开发工具'
+              : i % 4 == 2
+              ? '云计算'
+              : '数据存储',
           tags: ['cisco', 'infra', 'cluster-$i', 'node-${i % 10}'],
           notes: '合成记录 $i 用于性能基准压测，测试多字段检索与中文包含性能。',
           updatedAt: now.subtract(Duration(minutes: i)),
@@ -55,10 +55,18 @@ void main() {
     sw4.stop();
 
     print('Benchmark Results (1000 entries):');
-    print('1. Chinese substring ("交换机 25"): ${sw1.elapsedMicroseconds / 1000} ms (found ${res1.length})');
-    print('2. IP fragment ("192.168.2"): ${sw2.elapsedMicroseconds / 1000} ms (found ${res2.length})');
-    print('3. Multi-term ("admin_500 cisco"): ${sw3.elapsedMicroseconds / 1000} ms (found ${res3.length})');
-    print('4. Empty query (stable sort 1000): ${sw4.elapsedMicroseconds / 1000} ms (found ${res4.length})');
+    print(
+      '1. Chinese substring ("交换机 25"): ${sw1.elapsedMicroseconds / 1000} ms (found ${res1.length})',
+    );
+    print(
+      '2. IP fragment ("192.168.2"): ${sw2.elapsedMicroseconds / 1000} ms (found ${res2.length})',
+    );
+    print(
+      '3. Multi-term ("admin_500 cisco"): ${sw3.elapsedMicroseconds / 1000} ms (found ${res3.length})',
+    );
+    print(
+      '4. Empty query (stable sort 1000): ${sw4.elapsedMicroseconds / 1000} ms (found ${res4.length})',
+    );
 
     expect(sw1.elapsedMilliseconds, lessThan(100));
     expect(sw2.elapsedMilliseconds, lessThan(100));
