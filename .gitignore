@@ -1,0 +1,22 @@
+# Build artifacts
+app/build/
+**/build/
+.dart_tool/
+**/.dart_tool/
+
+# IDE
+.idea/
+**/.idea/
+*.iml
+**/*.iml
+.vscode/
+
+# Vault and credentials
+*.avlt
+!test/**/fixtures/*.avlt
+*.key
+*.backup
+
+# Logs and scratch
+*.log
+scratch/
