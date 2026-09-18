@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Account Vault
+Comment=Local Encrypted Password Manager
+Exec=/home/iumdoa/.local/bin/account-vault --show
+Icon=dialog-password
+Terminal=false
+Type=Application
+Categories=Utility;Security;
+StartupWMClass=dev.local.account_vault
