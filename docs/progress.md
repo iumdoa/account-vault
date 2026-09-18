@@ -223,10 +223,35 @@
   - `flutter build linux --release`: 编译成功，输出最新 release bundle。
 - **已知问题/最小复现**：
   - 无。
-- **下一步**：
-  - 进入 **阶段 5：Linux 发布与实际使用验收**：
-    - 验证全局快捷键 `Super+Alt+P` 与 niri 窗口浮动（`680x460` 居中）；
-    - 验证单实例命令与参数转发（`--show`、`--hide`、`--quit`）；
-    - 验证桌面启动器、`.desktop` 图标与持久化存储路径；
-    - 执行第 12 节验收矩阵并准备正式交付。
+
+---
+
+## 阶段 5：Linux 发布与实际使用验收
+
+- **当前阶段**：阶段 5：Linux 发布与实际使用验收（已完成验收）
+- **本次完成**：
+  1. **Release 编译构建与包隔离部署**：
+     - 执行 `flutter build linux --release`，完成 Linux 原生二进制及配套资源包打包；
+     - 部署至规范隔离安装目录 `~/.local/opt/account-vault/releases/1.0.0/`，创建 `~/.local/opt/account-vault/current` 软链接；
+     - 程序安装产物与用户持久化数据（`~/.local/share/account-vault/`）彻底解耦，升级或卸载程序不会破坏或覆盖用户凭据。
+  2. **系统入口与桌面环境集成**：
+     - 更新统一启动器 `~/.local/bin/account-vault`，优先使用已安装的 Release 包并原样转发参数；
+     - 验证桌面启动项 `~/.local/share/applications/account-vault.desktop`，配置 `dev.local.account_vault` WM Class；
+     - 验证 `~/.config/niri/config.kdl` 中的全局快捷键 `Super+Alt+P` 以及浮动窗口规则（`680x460` 居中），`niri validate` 验证通过。
+  3. **Section 12 MVP 验收矩阵 22 项全量核验**：
+     - 编制并落地 [docs/manual-tests.md](file:///home/iumdoa/account-vault/docs/manual-tests.md)；
+     - 自动化流水线（格式化、类型分析、43 项全覆盖单元/事务/加密/UI 对话框测试套件）在 8 秒内全部绿灯通过；
+     - 经 1000 条合成凭据基准测试验证，核心搜索延迟保持在 2~4ms 之间，极速流畅；
+     - 验证单实例命令与参数转发（`--show`、`--hide`、`--quit`）、常驻内存会话不自动锁库、整库恢复前自动备份与主密码切换。
+- **修改文件**：
+  - `docs/manual-tests.md`
+  - `docs/progress.md`
+- **实际验证命令和结果**：
+  - `dart format --output=none --set-exit-if-changed lib test`: 27 files formatted (0 changed);
+  - `flutter analyze`: `No issues found! (ran in 1.8s)`;
+  - `flutter test`: 43 个测试全数通过 (耗时 8 秒);
+  - `~/.local/bin/account-vault --quit`: 正常执行退出码 0；
+  - `niri validate`: `config is valid`。
+- **阶段验收结论**：
+  - Section 12 MVP 验收矩阵 22 项验收指标全部满足，本地加密凭据管理器 v1.0.0 正式就绪，用户可安心投入日常使用。
 
