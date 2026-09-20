@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import '../../application/vault_session_controller.dart';
 import '../../domain/models/vault_entry.dart';
 import 'copy_icon.dart';
-import 'entry_form_dialog.dart';
 import 'settings_dialog.dart';
 import 'vault_icons.dart';
 
@@ -112,14 +111,6 @@ class _QuickPanelViewState extends State<QuickPanelView> {
             event.logicalKey == LogicalKeyboardKey.arrowUp;
         if (event is KeyRepeatEvent && !isArrow) return KeyEventResult.ignored;
 
-        // Ctrl+N: quickly open Create Account dialog
-        if (event.logicalKey == LogicalKeyboardKey.keyN &&
-            !isComposing &&
-            HardwareKeyboard.instance.isControlPressed) {
-          EntryFormDialog.show(context, controller: controller);
-          return KeyEventResult.handled;
-        }
-
         if (event.logicalKey == LogicalKeyboardKey.arrowDown && !isComposing) {
           controller.selectNext();
           return KeyEventResult.handled;
@@ -141,82 +132,55 @@ class _QuickPanelViewState extends State<QuickPanelView> {
       },
       child: Column(
         children: [
-          // Top Row: Search Input + New Account Button
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: searchController,
-                  focusNode: searchFocusNode,
-                  autofocus: true,
-                  style: const TextStyle(fontSize: 14, color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: '搜索标题、IP、网址片段、账号...',
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 13,
-                    ),
-                    prefixIcon: const Icon(
-                      VaultIcons.search,
-                      color: Colors.blueAccent,
-                      size: 20,
-                    ),
-                    suffixIcon: searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(VaultIcons.close, size: 16),
-                            tooltip: '清空搜索',
-                            onPressed: () {
-                              searchController.clear();
-                              controller.setQuery('');
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: const Color(0xFF21252B),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 11,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFF3E4451)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(
-                        color: Colors.blueAccent,
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                  onChanged: (val) {
-                    controller.setQuery(val);
-                  },
+          // Search Input
+          TextField(
+            controller: searchController,
+            focusNode: searchFocusNode,
+            autofocus: true,
+            style: const TextStyle(fontSize: 14, color: Colors.white),
+            decoration: InputDecoration(
+              hintText: '搜索标题、IP、网址片段、账号...',
+              hintStyle: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 13,
+              ),
+              prefixIcon: const Icon(
+                VaultIcons.search,
+                color: Colors.blueAccent,
+                size: 20,
+              ),
+              suffixIcon: searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(VaultIcons.close, size: 16),
+                      tooltip: '清空搜索',
+                      onPressed: () {
+                        searchController.clear();
+                        controller.setQuery('');
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: const Color(0xFF21252B),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 11,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF3E4451)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(
+                  color: Colors.blueAccent,
+                  width: 1.5,
                 ),
               ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                icon: const Icon(VaultIcons.add, size: 18),
-                label: const Text(
-                  '新建账号',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed: () =>
-                    EntryFormDialog.show(context, controller: controller),
-              ),
-            ],
+            ),
+            onChanged: (val) {
+              controller.setQuery(val);
+            },
           ),
 
           // Group Filter Chips Row
@@ -325,7 +289,7 @@ class _QuickPanelViewState extends State<QuickPanelView> {
               children: [
                 Expanded(
                   child: Text(
-                    '↑↓ 切换 · Enter 复制密码 · Ctrl+Enter 复制账号 · Ctrl+N 新建 · Esc 隐藏',
+                    '↑↓ 切换 · Enter 复制密码 · Ctrl+Enter 复制账号 · Esc 隐藏',
                     style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
                     overflow: TextOverflow.ellipsis,
                   ),

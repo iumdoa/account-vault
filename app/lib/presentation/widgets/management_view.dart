@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../application/vault_session_controller.dart';
 import '../../domain/models/vault_entry.dart';
@@ -60,17 +61,28 @@ class ManagementView extends StatelessWidget {
   Widget build(BuildContext context) {
     final groups = controller.availableGroups;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Top Navigation Header
-        Row(
-          children: [
-            IconButton(
-              icon: const Icon(VaultIcons.back, color: Colors.blueAccent),
-              tooltip: '返回快捷面板',
-              onPressed: onBackToQuickPanel,
-            ),
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.keyN &&
+            HardwareKeyboard.instance.isControlPressed) {
+          EntryFormDialog.show(context, controller: controller);
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Top Navigation Header
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(VaultIcons.back, color: Colors.blueAccent),
+                tooltip: '返回快捷面板',
+                onPressed: onBackToQuickPanel,
+              ),
             const Text(
               '账号库管理',
               style: TextStyle(
@@ -246,6 +258,27 @@ class ManagementView extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              icon: const Icon(VaultIcons.add, size: 16),
+              label: const Text(
+                '新建账号',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () =>
+                  EntryFormDialog.show(context, controller: controller),
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -278,8 +311,9 @@ class ManagementView extends StatelessWidget {
                 ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 }
 
 class _ManagementItemCard extends StatefulWidget {
