@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../application/vault_session_controller.dart';
 import '../../domain/models/vault_entry.dart';
 import '../../domain/services/uuid_service.dart';
+import 'vault_icons.dart';
 
 /// Modal dialog for adding or editing a vault entry (Streamlined without redundant notes/tags)
 class EntryFormDialog extends StatefulWidget {
@@ -116,9 +117,7 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
       title: Row(
         children: [
           Icon(
-            isEditing
-                ? Icons.edit_note_rounded
-                : Icons.add_circle_outline_rounded,
+            isEditing ? VaultIcons.edit : VaultIcons.add,
             color: Colors.blueAccent,
             size: 24,
           ),
@@ -155,7 +154,7 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
                   child: Row(
                     children: [
                       const Icon(
-                        Icons.error_outline_rounded,
+                        VaultIcons.error,
                         color: Colors.redAccent,
                         size: 16,
                       ),
@@ -257,9 +256,7 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
                       obscureText: _obscurePassword,
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off_rounded
-                              : Icons.visibility_rounded,
+                          _obscurePassword ? VaultIcons.eyeOff : VaultIcons.eye,
                           size: 18,
                           color: Colors.grey.shade400,
                         ),
@@ -283,7 +280,7 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
           child: Text('取消', style: TextStyle(color: Colors.grey.shade400)),
         ),
         ElevatedButton.icon(
-          icon: const Icon(Icons.check_rounded, size: 16),
+          icon: const Icon(VaultIcons.check, size: 16),
           label: const Text('保存'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blueAccent,

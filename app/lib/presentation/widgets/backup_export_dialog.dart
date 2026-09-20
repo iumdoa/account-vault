@@ -1,11 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+
 import 'package:path/path.dart' as p;
 
 import '../../application/vault_session_controller.dart';
 import '../../infrastructure/storage/vault_path_provider.dart';
 import '../../platform/native_dialog_service.dart';
+import 'vault_icons.dart';
 
 class BackupExportDialog extends StatefulWidget {
   final VaultSessionController controller;
@@ -102,11 +104,7 @@ class _BackupExportDialogState extends State<BackupExportDialog> {
       ),
       title: const Row(
         children: [
-          Icon(
-            Icons.file_download_outlined,
-            color: Colors.blueAccent,
-            size: 22,
-          ),
+          Icon(VaultIcons.export, color: Colors.blueAccent, size: 22),
           SizedBox(width: 8),
           Text('导出加密备份', style: TextStyle(color: Colors.white, fontSize: 16)),
         ],
@@ -140,7 +138,7 @@ class _BackupExportDialogState extends State<BackupExportDialog> {
                   child: Row(
                     children: [
                       Icon(
-                        Icons.error_outline,
+                        VaultIcons.error,
                         size: 16,
                         color: Colors.red.shade300,
                       ),

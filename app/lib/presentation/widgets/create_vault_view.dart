@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter/services.dart';
 
 import '../../application/vault_session_controller.dart';
+import 'vault_icons.dart';
 
 /// Screen presented when no vault file exists on disk yet
 class CreateVaultView extends StatefulWidget {
@@ -100,7 +102,7 @@ class _CreateVaultViewState extends State<CreateVaultView> {
                         ),
                       ),
                       child: const Icon(
-                        Icons.shield_rounded,
+                        VaultIcons.shield,
                         color: Color(0xFF42A5F5),
                         size: 28,
                       ),
@@ -142,7 +144,7 @@ class _CreateVaultViewState extends State<CreateVaultView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Icon(
-                          Icons.warning_amber_rounded,
+                          VaultIcons.warning,
                           color: Colors.amber,
                           size: 16,
                         ),
@@ -179,7 +181,7 @@ class _CreateVaultViewState extends State<CreateVaultView> {
                       child: Row(
                         children: [
                           Icon(
-                            Icons.error_outline,
+                            VaultIcons.error,
                             size: 16,
                             color: Colors.red.shade300,
                           ),
@@ -213,15 +215,13 @@ class _CreateVaultViewState extends State<CreateVaultView> {
                         fontSize: 13,
                       ),
                       prefixIcon: const Icon(
-                        Icons.key_rounded,
+                        VaultIcons.password,
                         color: Colors.grey,
                         size: 16,
                       ),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
+                          _obscurePassword ? VaultIcons.eyeOff : VaultIcons.eye,
                           color: Colors.grey,
                           size: 16,
                         ),
@@ -271,15 +271,13 @@ class _CreateVaultViewState extends State<CreateVaultView> {
                         fontSize: 13,
                       ),
                       prefixIcon: const Icon(
-                        Icons.check_circle_outline,
+                        VaultIcons.success,
                         color: Colors.grey,
                         size: 16,
                       ),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscureConfirm
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
+                          _obscureConfirm ? VaultIcons.eyeOff : VaultIcons.eye,
                           color: Colors.grey,
                           size: 16,
                         ),

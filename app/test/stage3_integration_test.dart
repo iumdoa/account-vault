@@ -10,6 +10,7 @@ import 'package:account_vault/infrastructure/storage/encrypted_file_vault_reposi
 import 'package:account_vault/infrastructure/storage/vault_path_provider.dart';
 import 'package:account_vault/presentation/widgets/create_vault_view.dart';
 import 'package:account_vault/presentation/widgets/unlock_view.dart';
+import 'package:account_vault/presentation/widgets/vault_icons.dart';
 
 void main() {
   group('Stage 3: VaultSessionController & Real Encrypted Storage Lifecycle', () {
@@ -276,13 +277,13 @@ void main() {
         expect(find.text('本地加密库已就绪，请输入主密码解锁'), findsOneWidget);
         expect(find.byType(TextField), findsOneWidget);
         expect(find.text('解 锁'), findsOneWidget);
-        expect(find.text('Esc 隐藏窗口 | Super+Alt+P 呼出'), findsOneWidget);
+        expect(find.text('Esc 隐藏窗口'), findsOneWidget);
 
         // Toggle password visibility
-        expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
-        await tester.tap(find.byIcon(Icons.visibility_off_outlined));
+        expect(find.byIcon(VaultIcons.eyeOff), findsOneWidget);
+        await tester.tap(find.byIcon(VaultIcons.eyeOff));
         await tester.pumpAndSettle();
-        expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
+        expect(find.byIcon(VaultIcons.eye), findsOneWidget);
 
         // Test Quit button
         await tester.tap(find.text('退出程序'));

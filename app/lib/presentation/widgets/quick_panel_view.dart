@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter/services.dart';
 
 import '../../application/vault_session_controller.dart';
 import '../../domain/models/vault_entry.dart';
+import 'copy_icon.dart';
 import 'entry_form_dialog.dart';
 import 'settings_dialog.dart';
+import 'vault_icons.dart';
 
 /// Quick Search and Copy Panel View (README Section 3.2)
-class QuickPanelView extends StatelessWidget {
+class QuickPanelView extends StatefulWidget {
   final VaultSessionController controller;
   final TextEditingController searchController;
   final FocusNode searchFocusNode;
@@ -22,6 +25,41 @@ class QuickPanelView extends StatelessWidget {
     required this.onOpenManagement,
     required this.onHideWindow,
   });
+
+  @override
+  State<QuickPanelView> createState() => _QuickPanelViewState();
+}
+
+class _QuickPanelViewState extends State<QuickPanelView> {
+  final ScrollController _scrollController = ScrollController();
+  double _itemExtent = 76;
+
+  VaultSessionController get controller => widget.controller;
+  TextEditingController get searchController => widget.searchController;
+  FocusNode get searchFocusNode => widget.searchFocusNode;
+  VoidCallback get onOpenManagement => widget.onOpenManagement;
+  VoidCallback get onHideWindow => widget.onHideWindow;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _keepSelectionVisible() {
+    if (!mounted || !_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final top = controller.selectedIndex * _itemExtent;
+    final bottom = top + _itemExtent;
+    final offset = position.pixels;
+    final target = top < offset
+        ? top
+        : bottom > offset + position.viewportDimension
+        ? bottom - position.viewportDimension
+        : offset;
+    final clamped = target.clamp(0.0, position.maxScrollExtent);
+    if (clamped != offset) _scrollController.jumpTo(clamped);
+  }
 
   void _handleKeyEnter({required bool isCtrl}) async {
     // If Chinese/IME is currently composing, do not intercept Enter!
@@ -47,16 +85,32 @@ class QuickPanelView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final availableGroups = controller.availableGroups;
+    // Uniform row extents let selection reach items outside the lazy build cache.
+    _itemExtent =
+        76 +
+        (MediaQuery.textScalerOf(context).scale(34) - 34).clamp(
+          0,
+          double.infinity,
+        );
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _keepSelectionVisible(),
+    );
 
     return Focus(
       autofocus: true,
       onKeyEvent: (node, event) {
-        if (event is! KeyDownEvent) {
+        if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
           return KeyEventResult.ignored;
         }
 
         // IME composing check
         final isComposing = searchController.value.composing.isValid;
+
+        // Repeated arrows must be consumed too, or default focus traversal runs.
+        final isArrow =
+            event.logicalKey == LogicalKeyboardKey.arrowDown ||
+            event.logicalKey == LogicalKeyboardKey.arrowUp;
+        if (event is KeyRepeatEvent && !isArrow) return KeyEventResult.ignored;
 
         // Ctrl+N: quickly open Create Account dialog
         if (event.logicalKey == LogicalKeyboardKey.keyN &&
@@ -103,13 +157,14 @@ class QuickPanelView extends StatelessWidget {
                       fontSize: 13,
                     ),
                     prefixIcon: const Icon(
-                      Icons.search_rounded,
+                      VaultIcons.search,
                       color: Colors.blueAccent,
                       size: 20,
                     ),
                     suffixIcon: searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.close_rounded, size: 16),
+                            icon: const Icon(VaultIcons.close, size: 16),
+                            tooltip: '清空搜索',
                             onPressed: () {
                               searchController.clear();
                               controller.setQuery('');
@@ -142,7 +197,7 @@ class QuickPanelView extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               ElevatedButton.icon(
-                icon: const Icon(Icons.add_rounded, size: 18),
+                icon: const Icon(VaultIcons.add, size: 18),
                 label: const Text(
                   '新建账号',
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
@@ -208,11 +263,7 @@ class QuickPanelView extends StatelessWidget {
               ),
               child: const Row(
                 children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    size: 14,
-                    color: Colors.amberAccent,
-                  ),
+                  Icon(VaultIcons.info, size: 14, color: Colors.amberAccent),
                   SizedBox(width: 6),
                   Text(
                     '阶段 1 内存模式：内置 20 条覆盖设备、网站与应用的虚构凭据，修改不持久化到硬盘',
@@ -240,6 +291,9 @@ class QuickPanelView extends StatelessWidget {
                     ),
                   )
                 : ListView.builder(
+                    key: const ValueKey('quick-entry-list'),
+                    controller: _scrollController,
+                    itemExtent: _itemExtent,
                     itemCount: controller.filteredEntries.length,
                     itemBuilder: (context, index) {
                       final entry = controller.filteredEntries[index];
@@ -277,7 +331,7 @@ class QuickPanelView extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.tune_rounded, size: 16),
+                  icon: const Icon(VaultIcons.settings, size: 18),
                   color: Colors.grey.shade400,
                   tooltip: '快捷键与偏好设置',
                   visualDensity: VisualDensity.compact,
@@ -285,7 +339,7 @@ class QuickPanelView extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 TextButton.icon(
-                  icon: const Icon(Icons.table_rows_rounded, size: 16),
+                  icon: const Icon(VaultIcons.list, size: 16),
                   label: const Text('管理页面', style: TextStyle(fontSize: 12)),
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.blueAccent,
@@ -377,18 +431,18 @@ class _EntryListItem extends StatelessWidget {
             children: [
               // Icon or Group Indicator
               Container(
-                width: 34,
-                height: 34,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.blueAccent.withValues(alpha: 0.3)
+                      ? VaultIcons.accent.withValues(alpha: 0.12)
                       : const Color(0xFF282C34),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   _getCategoryIcon(entry),
-                  size: 18,
-                  color: isSelected ? Colors.white : Colors.blueGrey.shade300,
+                  size: 20,
+                  color: isSelected ? VaultIcons.accent : VaultIcons.muted,
                 ),
               ),
               const SizedBox(width: 12),
@@ -441,8 +495,8 @@ class _EntryListItem extends StatelessWidget {
                         if (entry.address != null &&
                             entry.address!.isNotEmpty) ...[
                           Icon(
-                            Icons.link_rounded,
-                            size: 12,
+                            VaultIcons.link,
+                            size: 14,
                             color: Colors.grey.shade500,
                           ),
                           const SizedBox(width: 3),
@@ -460,8 +514,8 @@ class _EntryListItem extends StatelessWidget {
                         ],
                         if (hasUsername) ...[
                           Icon(
-                            Icons.person_outline_rounded,
-                            size: 12,
+                            VaultIcons.person,
+                            size: 14,
                             color: Colors.grey.shade500,
                           ),
                           const SizedBox(width: 3),
@@ -489,19 +543,15 @@ class _EntryListItem extends StatelessWidget {
               if (hasUsername)
                 IconButton(
                   tooltip: '复制账号 (Ctrl+Enter)',
-                  icon: const Icon(Icons.person_outline_rounded, size: 18),
-                  color: isSelected ? Colors.blueAccent : Colors.grey.shade400,
+                  icon: const Icon(VaultIcons.person, size: 18),
+                  color: isSelected ? VaultIcons.accent : VaultIcons.muted,
                   onPressed: onCopyAccount,
                 ),
               IconButton(
                 tooltip: hasPassword ? '复制密码 (Enter)' : '无密码',
-                icon: Icon(
-                  Icons.key_rounded,
-                  size: 18,
-                  color: hasPassword
-                      ? (isSelected ? Colors.greenAccent : Colors.grey.shade400)
-                      : Colors.grey.shade700,
-                ),
+                icon: const CopyIcon(),
+                color: isSelected ? VaultIcons.accent : VaultIcons.muted,
+                disabledColor: Colors.grey.shade700,
                 onPressed: hasPassword ? onCopyPassword : null,
               ),
             ],
@@ -514,14 +564,14 @@ class _EntryListItem extends StatelessWidget {
   IconData _getCategoryIcon(VaultEntry entry) {
     final g = (entry.group ?? '').toLowerCase();
     if (g.contains('网络') || g.contains('设备')) {
-      return Icons.router_rounded;
+      return VaultIcons.network;
     } else if (g.contains('开发') || g.contains('工具')) {
-      return Icons.terminal_rounded;
+      return VaultIcons.code;
     } else if (g.contains('云')) {
-      return Icons.cloud_outlined;
+      return VaultIcons.cloud;
     } else if (g.contains('数据') || g.contains('存储')) {
-      return Icons.storage_rounded;
+      return VaultIcons.storage;
     }
-    return Icons.lock_outline_rounded;
+    return VaultIcons.lock;
   }
 }

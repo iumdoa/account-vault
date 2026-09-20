@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter/services.dart';
 
 import '../../platform/shortcut_config_service.dart';
+import 'vault_icons.dart';
 
 class SettingsDialog extends StatefulWidget {
   final ShortcutConfigService shortcutService;
@@ -282,7 +284,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
               Row(
                 children: [
                   const Icon(
-                    Icons.settings_rounded,
+                    VaultIcons.settings,
                     color: Colors.blueAccent,
                     size: 24,
                   ),
@@ -297,7 +299,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                    icon: const Icon(VaultIcons.close, color: Colors.grey),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -333,8 +335,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                                 children: [
                                   Icon(
                                     isNiriAvailable
-                                        ? Icons.check_circle_rounded
-                                        : Icons.info_outline_rounded,
+                                        ? VaultIcons.success
+                                        : VaultIcons.info,
                                     color: isNiriAvailable
                                         ? Colors.greenAccent
                                         : Colors.amberAccent,
@@ -400,9 +402,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
                                         children: [
                                           Icon(
                                             _isRecording
-                                                ? Icons
-                                                      .radio_button_checked_rounded
-                                                : Icons.keyboard_rounded,
+                                                ? VaultIcons.record
+                                                : VaultIcons.keyboard,
                                             size: 20,
                                             color: _isRecording
                                                 ? Colors.redAccent
@@ -523,7 +524,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                                 child: Row(
                                   children: [
                                     const Icon(
-                                      Icons.warning_amber_rounded,
+                                      VaultIcons.warning,
                                       color: Colors.orangeAccent,
                                       size: 18,
                                     ),
@@ -556,7 +557,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                                 child: const Row(
                                   children: [
                                     Icon(
-                                      Icons.info_outline_rounded,
+                                      VaultIcons.info,
                                       color: Colors.blueAccent,
                                       size: 16,
                                     ),
@@ -584,7 +585,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                                 child: const Row(
                                   children: [
                                     Icon(
-                                      Icons.check_circle_rounded,
+                                      VaultIcons.success,
                                       color: Colors.greenAccent,
                                       size: 16,
                                     ),
@@ -614,7 +615,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                                 child: Row(
                                   children: [
                                     const Icon(
-                                      Icons.error_outline_rounded,
+                                      VaultIcons.error,
                                       color: Colors.redAccent,
                                       size: 18,
                                     ),
@@ -687,7 +688,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                               color: Colors.white,
                             ),
                           )
-                        : const Icon(Icons.check_rounded, size: 16),
+                        : const Icon(VaultIcons.check, size: 16),
                     label: Text(_isSaving ? '正在验证并保存...' : '保存并立即生效'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,

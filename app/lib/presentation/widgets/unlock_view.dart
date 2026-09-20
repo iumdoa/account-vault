@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter/services.dart';
 
 import '../../application/vault_session_controller.dart';
 import 'backup_restore_dialog.dart';
+import 'vault_icons.dart';
 
 /// Screen presented when an encrypted vault exists on disk but is locked
 class UnlockView extends StatefulWidget {
@@ -135,7 +137,7 @@ class _UnlockViewState extends State<UnlockView> {
                         ),
                       ),
                       child: const Icon(
-                        Icons.lock_rounded,
+                        VaultIcons.lock,
                         color: Color(0xFF42A5F5),
                         size: 28,
                       ),
@@ -182,7 +184,7 @@ class _UnlockViewState extends State<UnlockView> {
                       child: Row(
                         children: [
                           Icon(
-                            Icons.error_outline,
+                            VaultIcons.error,
                             size: 18,
                             color: Colors.red.shade300,
                           ),
@@ -213,15 +215,13 @@ class _UnlockViewState extends State<UnlockView> {
                       hintText: '输入主密码',
                       hintStyle: TextStyle(color: Colors.grey.shade600),
                       prefixIcon: const Icon(
-                        Icons.key_rounded,
+                        VaultIcons.password,
                         color: Colors.grey,
                         size: 18,
                       ),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
+                          _obscurePassword ? VaultIcons.eyeOff : VaultIcons.eye,
                           color: Colors.grey,
                           size: 18,
                         ),
@@ -307,7 +307,7 @@ class _UnlockViewState extends State<UnlockView> {
                         onPressed: widget.controller.isBusy
                             ? null
                             : _handleRestore,
-                        icon: const Icon(Icons.history_rounded, size: 14),
+                        icon: const Icon(VaultIcons.history, size: 14),
                         label: const Text(
                           '从上一份快照恢复 (vault.previous.avlt)',
                           style: TextStyle(fontSize: 12),
@@ -328,7 +328,7 @@ class _UnlockViewState extends State<UnlockView> {
                               context,
                               controller: widget.controller,
                             ),
-                      icon: const Icon(Icons.settings_backup_restore, size: 14),
+                      icon: const Icon(VaultIcons.restore, size: 14),
                       label: const Text(
                         '从外部备份恢复 (.avlt)',
                         style: TextStyle(fontSize: 12),
@@ -347,7 +347,7 @@ class _UnlockViewState extends State<UnlockView> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Esc 隐藏窗口 | Super+Alt+P 呼出',
+                        'Esc 隐藏窗口',
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 11,

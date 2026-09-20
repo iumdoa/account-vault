@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../application/vault_session_controller.dart';
 import '../../infrastructure/crypto/vault_crypto_types.dart';
 import '../../platform/native_dialog_service.dart';
+import 'vault_icons.dart';
 
 class BackupRestoreDialog extends StatefulWidget {
   final VaultSessionController controller;
@@ -151,11 +152,7 @@ class _BackupRestoreDialogState extends State<BackupRestoreDialog> {
       ),
       title: const Row(
         children: [
-          Icon(
-            Icons.settings_backup_restore,
-            color: Colors.amberAccent,
-            size: 22,
-          ),
+          Icon(VaultIcons.restore, color: Colors.amberAccent, size: 22),
           SizedBox(width: 8),
           Text('从备份整库恢复', style: TextStyle(color: Colors.white, fontSize: 16)),
         ],
@@ -190,7 +187,7 @@ class _BackupRestoreDialogState extends State<BackupRestoreDialog> {
                   child: Row(
                     children: [
                       Icon(
-                        Icons.error_outline,
+                        VaultIcons.error,
                         size: 16,
                         color: Colors.red.shade300,
                       ),
@@ -281,9 +278,7 @@ class _BackupRestoreDialogState extends State<BackupRestoreDialog> {
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
+                      _obscurePassword ? VaultIcons.eyeOff : VaultIcons.eye,
                       color: Colors.grey,
                       size: 16,
                     ),
@@ -309,7 +304,7 @@ class _BackupRestoreDialogState extends State<BackupRestoreDialog> {
                   alignment: Alignment.centerLeft,
                   child: OutlinedButton.icon(
                     onPressed: _isProcessing ? null : _handlePreview,
-                    icon: const Icon(Icons.search, size: 16),
+                    icon: const Icon(VaultIcons.search, size: 16),
                     label: const Text('检查并预览备份内容'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.blueAccent,
@@ -340,7 +335,7 @@ class _BackupRestoreDialogState extends State<BackupRestoreDialog> {
                       const Row(
                         children: [
                           Icon(
-                            Icons.check_circle_outline,
+                            VaultIcons.success,
                             color: Colors.greenAccent,
                             size: 16,
                           ),
@@ -383,7 +378,7 @@ class _BackupRestoreDialogState extends State<BackupRestoreDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Icon(
-                        Icons.warning_amber_rounded,
+                        VaultIcons.warning,
                         color: Colors.amberAccent,
                         size: 16,
                       ),

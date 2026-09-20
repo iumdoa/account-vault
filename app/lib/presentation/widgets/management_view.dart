@@ -5,7 +5,9 @@ import '../../domain/models/vault_entry.dart';
 import 'backup_export_dialog.dart';
 import 'backup_restore_dialog.dart';
 import 'entry_form_dialog.dart';
+import 'copy_icon.dart';
 import 'settings_dialog.dart';
+import 'vault_icons.dart';
 
 /// Full Management View (README Section 3.3)
 class ManagementView extends StatelessWidget {
@@ -65,10 +67,7 @@ class ManagementView extends StatelessWidget {
         Row(
           children: [
             IconButton(
-              icon: const Icon(
-                Icons.arrow_back_rounded,
-                color: Colors.blueAccent,
-              ),
+              icon: const Icon(VaultIcons.back, color: Colors.blueAccent),
               tooltip: '返回快捷面板',
               onPressed: onBackToQuickPanel,
             ),
@@ -113,8 +112,8 @@ class ManagementView extends StatelessWidget {
             if (!controller.isMockMode) ...[
               IconButton(
                 icon: const Icon(
-                  Icons.archive_outlined,
-                  color: Colors.lightBlueAccent,
+                  VaultIcons.export,
+                  color: VaultIcons.muted,
                   size: 20,
                 ),
                 tooltip: '导出加密备份',
@@ -123,8 +122,8 @@ class ManagementView extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(
-                  Icons.unarchive_outlined,
-                  color: Colors.orangeAccent,
+                  VaultIcons.restore,
+                  color: VaultIcons.muted,
                   size: 20,
                 ),
                 tooltip: '从备份整库恢复',
@@ -134,8 +133,8 @@ class ManagementView extends StatelessWidget {
               const SizedBox(width: 4),
               IconButton(
                 icon: const Icon(
-                  Icons.lock_outline_rounded,
-                  color: Colors.amberAccent,
+                  VaultIcons.lock,
+                  color: VaultIcons.muted,
                   size: 20,
                 ),
                 tooltip: '锁定密码库',
@@ -148,8 +147,8 @@ class ManagementView extends StatelessWidget {
             const SizedBox(width: 4),
             IconButton(
               icon: const Icon(
-                Icons.tune_rounded,
-                color: Colors.cyanAccent,
+                VaultIcons.settings,
+                color: VaultIcons.muted,
                 size: 20,
               ),
               tooltip: '偏好设置与快捷键',
@@ -158,8 +157,8 @@ class ManagementView extends StatelessWidget {
             const SizedBox(width: 4),
             IconButton(
               icon: const Icon(
-                Icons.power_settings_new_rounded,
-                color: Colors.redAccent,
+                VaultIcons.power,
+                color: VaultIcons.danger,
                 size: 20,
               ),
               tooltip: '退出程序',
@@ -183,7 +182,7 @@ class ManagementView extends StatelessWidget {
                     fontSize: 12,
                   ),
                   prefixIcon: const Icon(
-                    Icons.search,
+                    VaultIcons.search,
                     size: 18,
                     color: Colors.grey,
                   ),
@@ -214,6 +213,11 @@ class ManagementView extends StatelessWidget {
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String?>(
+                    icon: const Icon(
+                      VaultIcons.chevronDown,
+                      size: 16,
+                      color: VaultIcons.muted,
+                    ),
                     value: controller.selectedGroup,
                     isExpanded: true,
                     dropdownColor: const Color(0xFF21252B),
@@ -346,9 +350,9 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
               const Spacer(),
               IconButton(
                 icon: const Icon(
-                  Icons.edit_rounded,
-                  size: 16,
-                  color: Colors.blueAccent,
+                  VaultIcons.edit,
+                  size: 18,
+                  color: VaultIcons.muted,
                 ),
                 tooltip: '编辑',
                 onPressed: widget.onEdit,
@@ -356,9 +360,9 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
               ),
               IconButton(
                 icon: const Icon(
-                  Icons.delete_outline_rounded,
-                  size: 16,
-                  color: Colors.redAccent,
+                  VaultIcons.delete,
+                  size: 18,
+                  color: VaultIcons.danger,
                 ),
                 tooltip: '删除',
                 onPressed: widget.onDelete,
@@ -373,11 +377,7 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
               padding: const EdgeInsets.only(bottom: 4),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.link_rounded,
-                    size: 12,
-                    color: Colors.grey.shade500,
-                  ),
+                  Icon(VaultIcons.link, size: 14, color: Colors.grey.shade500),
                   const SizedBox(width: 4),
                   Text(
                     entry.address!,
@@ -397,8 +397,8 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.person_outline_rounded,
-                      size: 12,
+                      VaultIcons.person,
+                      size: 14,
                       color: Colors.grey.shade500,
                     ),
                     const SizedBox(width: 4),
@@ -410,11 +410,8 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(
-                        Icons.copy_rounded,
-                        size: 14,
-                        color: Colors.grey,
-                      ),
+                      icon: const CopyIcon(),
+                      color: VaultIcons.muted,
                       tooltip: '复制账号',
                       onPressed: widget.onCopyAccount,
                       visualDensity: VisualDensity.compact,
@@ -426,8 +423,8 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.key_rounded,
-                      size: 12,
+                      VaultIcons.password,
+                      size: 14,
                       color: Colors.grey.shade500,
                     ),
                     const SizedBox(width: 4),
@@ -445,11 +442,9 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                     ),
                     IconButton(
                       icon: Icon(
-                        _revealPassword
-                            ? Icons.visibility_off_rounded
-                            : Icons.visibility_rounded,
-                        size: 14,
-                        color: Colors.grey,
+                        _revealPassword ? VaultIcons.eyeOff : VaultIcons.eye,
+                        size: 16,
+                        color: VaultIcons.muted,
                       ),
                       tooltip: _revealPassword ? '隐藏密码' : '临时显示密码',
                       onPressed: () {
@@ -460,11 +455,8 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                       visualDensity: VisualDensity.compact,
                     ),
                     IconButton(
-                      icon: const Icon(
-                        Icons.copy_rounded,
-                        size: 14,
-                        color: Colors.grey,
-                      ),
+                      icon: const CopyIcon(),
+                      color: VaultIcons.muted,
                       tooltip: '复制密码',
                       onPressed: widget.onCopyPassword,
                       visualDensity: VisualDensity.compact,
