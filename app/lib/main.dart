@@ -5,6 +5,7 @@ import 'application/vault_session_controller.dart';
 import 'infrastructure/storage/encrypted_file_vault_repository.dart';
 import 'infrastructure/storage/vault_path_provider.dart';
 import 'presentation/widgets/create_vault_view.dart';
+import 'presentation/widgets/management_auth_dialog.dart';
 import 'presentation/widgets/management_view.dart';
 import 'presentation/widgets/quick_panel_view.dart';
 import 'presentation/widgets/unlock_view.dart';
@@ -202,10 +203,16 @@ class _AppRootScaffoldState extends State<AppRootScaffold> {
                 controller: widget.controller,
                 searchController: _searchController,
                 searchFocusNode: _searchFocusNode,
-                onOpenManagement: () {
-                  setState(() {
-                    _isManagementView = true;
-                  });
+                onOpenManagement: () async {
+                  final authenticated = await ManagementAuthDialog.show(
+                    context,
+                    controller: widget.controller,
+                  );
+                  if (authenticated && mounted) {
+                    setState(() {
+                      _isManagementView = true;
+                    });
+                  }
                 },
                 onHideWindow: _hideWindow,
               );

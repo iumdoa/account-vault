@@ -37,8 +37,20 @@ void main() {
     expect(find.text('汇聚交换机 01 (楼宇B)'), findsOneWidget);
     expect(find.text('AWS 生产云控制台'), findsNothing);
 
-    // 3. Open Management View
+    // 3. Open Management View (triggers secondary authentication dialog)
     await tester.tap(find.text('管理页面'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('管理权限验证'), findsOneWidget);
+
+    // Verify empty password rejection
+    await tester.tap(find.text('验 证'));
+    await tester.pumpAndSettle();
+    expect(find.text('请输入主密码'), findsOneWidget);
+
+    // Enter master password to unlock management view
+    await tester.enterText(find.byType(TextField).last, 'mock_master_key');
+    await tester.tap(find.text('验 证'));
     await tester.pumpAndSettle();
 
     expect(find.text('账号库管理'), findsOneWidget);
@@ -101,6 +113,12 @@ void main() {
     // 9. Go to ManagementView and verify Ctrl+N opens EntryFormDialog
     await tester.tap(find.text('管理页面'));
     await tester.pumpAndSettle();
+
+    expect(find.text('管理权限验证'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'mock_master_key');
+    await tester.tap(find.text('验 证'));
+    await tester.pumpAndSettle();
+
     expect(find.text('账号库管理'), findsOneWidget);
 
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);

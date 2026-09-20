@@ -201,6 +201,17 @@ class VaultSessionController extends ChangeNotifier {
     }
   }
 
+  /// Verifies master password against the current active vault session
+  Future<bool> verifyMasterPassword(String password) async {
+    if (password.isEmpty) return false;
+    if (isMockMode) {
+      // In mock mode (tests/previews), accept any non-empty password
+      return true;
+    }
+    if (_encryptedRepo == null) return false;
+    return await _encryptedRepo!.verifyMasterPassword(password);
+  }
+
   /// Restores vault from vault.previous.avlt
   Future<bool> restoreFromPrevious(String masterPassword) async {
     if (_encryptedRepo == null) return false;

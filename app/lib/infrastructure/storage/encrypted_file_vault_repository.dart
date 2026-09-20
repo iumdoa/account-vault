@@ -57,6 +57,25 @@ class EncryptedFileVaultRepository implements VaultRepository {
     _entries = [];
   }
 
+  /// Verifies whether the candidate password matches the current session key
+  Future<bool> verifyMasterPassword(String password) async {
+    if (_sessionKey == null || _salt == null) return false;
+    try {
+      final candidateKey = await VaultCryptoService.deriveKey(
+        password: password,
+        salt: _salt!,
+      );
+      if (candidateKey.length != _sessionKey!.length) return false;
+      var diff = 0;
+      for (var i = 0; i < candidateKey.length; i++) {
+        diff |= candidateKey[i] ^ _sessionKey![i];
+      }
+      return diff == 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<bool> vaultExists() async {
     return await pathProvider.mainVaultFile.exists();
   }

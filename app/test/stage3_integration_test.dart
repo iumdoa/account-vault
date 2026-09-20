@@ -245,6 +245,31 @@ void main() {
       expect(controller3.allEntries, isEmpty);
       expect(controller3.revision, equals(3));
     });
+
+    test('8. verifyMasterPassword validates candidate password in active session', () async {
+      final controller = VaultSessionController(
+        repository: repo,
+        isMockMode: false,
+      );
+      await controller.initialize();
+      await controller.createVault(
+        masterPassword: testPassword,
+        confirmPassword: testPassword,
+      );
+
+      // Correct password
+      expect(await controller.verifyMasterPassword(testPassword), isTrue);
+
+      // Wrong password
+      expect(await controller.verifyMasterPassword('WrongMasterPass_999'), isFalse);
+
+      // Empty password
+      expect(await controller.verifyMasterPassword(''), isFalse);
+
+      // Locked session returns false
+      controller.lock();
+      expect(await controller.verifyMasterPassword(testPassword), isFalse);
+    });
   });
 
   group('Stage 3: Presentation Widgets (UnlockView & CreateVaultView)', () {
