@@ -13,6 +13,7 @@ window-rule {
 // 推荐快捷键 Super+Alt+P (或自定义如 Alt+P、Ctrl+Alt+P)
 binds {
     Super+Alt+P repeat=false {
-        spawn "/home/iumdoa/.local/bin/account-vault" "--show";
+        // 如果已加入 PATH，可直接使用 "account-vault"；否则使用完整路径如 "~/.local/bin/account-vault"
+        spawn "account-vault" "--show";
     }
 }

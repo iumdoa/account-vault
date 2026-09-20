@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  analyze_and_test:
+    name: Analyze, Test & Verify Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            clang \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libgtk-3-dev
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Print Flutter & Dart environment
+        run: flutter doctor -v
+
+      - name: Install dependencies
+        working-directory: ./app
+        run: flutter pub get
+
+      - name: Check code formatting
+        working-directory: ./app
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Run static analysis
+        working-directory: ./app
+        run: flutter analyze
+
+      - name: Run unit & widget test suite
+        working-directory: ./app
+        run: flutter test --coverage
+
+      - name: Verify Linux release compilation
+        working-directory: ./app
+        run: flutter build linux --release

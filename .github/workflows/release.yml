@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build_linux:
+    name: Build Linux Release Bundle
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            clang \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libgtk-3-dev
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter dependencies
+        working-directory: ./app
+        run: flutter pub get
+
+      - name: Run tests before build
+        working-directory: ./app
+        run: flutter test
+
+      - name: Build Linux release bundle
+        working-directory: ./app
+        run: flutter build linux --release
+
+      - name: Prepare release archive
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          STAGE_DIR=account-vault-${VERSION}-linux-x86_64
+          mkdir -p ${STAGE_DIR}
+          cp -r app/build/linux/x64/release/bundle/* ${STAGE_DIR}/
+          mkdir -p ${STAGE_DIR}/packaging
+          cp packaging/* ${STAGE_DIR}/packaging/
+          tar -czvf ${STAGE_DIR}.tar.gz ${STAGE_DIR}
+          sha256sum ${STAGE_DIR}.tar.gz > ${STAGE_DIR}.tar.gz.sha256
+
+      - name: Create GitHub Release and Upload Artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            account-vault-*-linux-x86_64.tar.gz
+            account-vault-*-linux-x86_64.tar.gz.sha256
+          draft: false
+          prerelease: false
+          generate_release_notes: true
