@@ -142,19 +142,6 @@ class ManagementView extends StatelessWidget {
                 onPressed: () =>
                     BackupRestoreDialog.show(context, controller: controller),
               ),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(
-                  VaultIcons.lock,
-                  color: VaultIcons.muted,
-                  size: 20,
-                ),
-                tooltip: '锁定密码库',
-                onPressed: () {
-                  controller.lock();
-                  onBackToQuickPanel();
-                },
-              ),
             ],
             const SizedBox(width: 4),
             IconButton(
@@ -216,44 +203,99 @@ class ManagementView extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               flex: 1,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF21252B),
+              child: PopupMenuButton<String?>(
+                tooltip: '筛选分组',
+                position: PopupMenuPosition.under,
+                offset: const Offset(0, 4),
+                color: const Color(0xFF21252B),
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF3E4451)),
+                  side: const BorderSide(color: Color(0xFF3E4451)),
                 ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String?>(
-                    icon: const Icon(
-                      VaultIcons.chevronDown,
-                      size: 16,
-                      color: VaultIcons.muted,
+                elevation: 8,
+                onSelected: (val) => controller.setGroupFilter(val),
+                itemBuilder: (context) => [
+                  PopupMenuItem<String?>(
+                    value: null,
+                    height: 36,
+                    child: Row(
+                      children: [
+                        Text(
+                          '全部分组',
+                          style: TextStyle(
+                            color: controller.selectedGroup == null
+                                ? Colors.blueAccent
+                                : Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (controller.selectedGroup == null)
+                          const Icon(
+                            VaultIcons.check,
+                            size: 14,
+                            color: Colors.blueAccent,
+                          ),
+                      ],
                     ),
-                    value: controller.selectedGroup,
-                    isExpanded: true,
-                    dropdownColor: const Color(0xFF21252B),
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                    hint: Text(
-                      '全部分组',
-                      style: TextStyle(
-                        color: Colors.grey.shade400,
-                        fontSize: 12,
+                  ),
+                  ...groups.map(
+                    (g) => PopupMenuItem<String?>(
+                      value: g,
+                      height: 36,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              g,
+                              style: TextStyle(
+                                color: controller.selectedGroup == g
+                                    ? Colors.blueAccent
+                                    : Colors.white,
+                                fontSize: 12,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (controller.selectedGroup == g)
+                            const Icon(
+                              VaultIcons.check,
+                              size: 14,
+                              color: Colors.blueAccent,
+                            ),
+                        ],
                       ),
                     ),
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('全部分组', style: TextStyle(fontSize: 12)),
-                      ),
-                      ...groups.map(
-                        (g) => DropdownMenuItem<String?>(
-                          value: g,
-                          child: Text(g, style: const TextStyle(fontSize: 12)),
+                  ),
+                ],
+                child: Container(
+                  height: 38,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF21252B),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF3E4451)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          controller.selectedGroup ?? '全部分组',
+                          style: TextStyle(
+                            color: controller.selectedGroup == null
+                                ? Colors.grey.shade400
+                                : Colors.white,
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const Icon(
+                        VaultIcons.chevronDown,
+                        size: 16,
+                        color: VaultIcons.muted,
+                      ),
                     ],
-                    onChanged: (val) => controller.setGroupFilter(val),
                   ),
                 ),
               ),

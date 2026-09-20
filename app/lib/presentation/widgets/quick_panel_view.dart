@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import '../../application/vault_session_controller.dart';
 import '../../domain/models/vault_entry.dart';
 import 'copy_icon.dart';
-import 'settings_dialog.dart';
 import 'vault_icons.dart';
 
 /// Quick Search and Copy Panel View (README Section 3.2)
@@ -294,14 +293,6 @@ class _QuickPanelViewState extends State<QuickPanelView> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(VaultIcons.settings, size: 18),
-                  color: Colors.grey.shade400,
-                  tooltip: '快捷键与偏好设置',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => SettingsDialog.show(context),
-                ),
-                const SizedBox(width: 4),
                 TextButton.icon(
                   icon: const Icon(VaultIcons.list, size: 16),
                   label: const Text('管理页面', style: TextStyle(fontSize: 12)),

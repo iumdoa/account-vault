@@ -41,6 +41,7 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
   late final TextEditingController _groupController;
 
   bool _obscurePassword = true;
+  bool _isCustomGroup = false;
   String? _errorMessage;
 
   @override
@@ -51,7 +52,12 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
     _addressController = TextEditingController(text: e?.address ?? '');
     _usernameController = TextEditingController(text: e?.username ?? '');
     _passwordController = TextEditingController(text: e?.password ?? '');
-    _groupController = TextEditingController(text: e?.group ?? '');
+    final initialGroup = e?.group ?? '';
+    _groupController = TextEditingController(text: initialGroup);
+    if (initialGroup.isNotEmpty &&
+        !widget.controller.availableGroups.contains(initialGroup)) {
+      _isCustomGroup = true;
+    }
   }
 
   @override
@@ -183,13 +189,236 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
 
               // Group and Address
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: _buildTextField(
-                      controller: _groupController,
-                      label: '分组 (可选)',
-                      hint: '日常办公 / 网络设备 / 开发工具',
-                    ),
+                    child: _isCustomGroup
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    '新建分组',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _isCustomGroup = false;
+                                        _groupController.clear();
+                                      });
+                                    },
+                                    child: const Text(
+                                      '返回下拉',
+                                      style: TextStyle(
+                                        color: Colors.blueAccent,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: _groupController,
+                                autofocus: true,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: '输入新分组名称',
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12,
+                                  ),
+                                  isDense: true,
+                                  filled: true,
+                                  fillColor: const Color(0xFF282C34),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFF3E4451),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                      color: Colors.blueAccent,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '分组 (可选)',
+                                style: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              PopupMenuButton<String?>(
+                                tooltip: '选择分组',
+                                position: PopupMenuPosition.under,
+                                offset: const Offset(0, 4),
+                                color: const Color(0xFF21252B),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  side: const BorderSide(
+                                    color: Color(0xFF3E4451),
+                                  ),
+                                ),
+                                elevation: 8,
+                                onSelected: (val) {
+                                  if (val == '__custom__') {
+                                    setState(() {
+                                      _isCustomGroup = true;
+                                      _groupController.clear();
+                                    });
+                                  } else {
+                                    setState(() {
+                                      _groupController.text = val ?? '';
+                                    });
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  PopupMenuItem<String?>(
+                                    value: null,
+                                    height: 36,
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          '无分组',
+                                          style: TextStyle(
+                                            color: _groupController.text
+                                                    .trim()
+                                                    .isEmpty
+                                                ? Colors.blueAccent
+                                                : Colors.white,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        if (_groupController.text
+                                            .trim()
+                                            .isEmpty)
+                                          const Icon(
+                                            VaultIcons.check,
+                                            size: 14,
+                                            color: Colors.blueAccent,
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  ...availableGroups.map(
+                                    (g) => PopupMenuItem<String?>(
+                                      value: g,
+                                      height: 36,
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              g,
+                                              style: TextStyle(
+                                                color: _groupController.text
+                                                            .trim() ==
+                                                        g
+                                                    ? Colors.blueAccent
+                                                    : Colors.white,
+                                                fontSize: 12,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          if (_groupController.text.trim() == g)
+                                            const Icon(
+                                              VaultIcons.check,
+                                              size: 14,
+                                              color: Colors.blueAccent,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const PopupMenuDivider(height: 1),
+                                  const PopupMenuItem<String?>(
+                                    value: '__custom__',
+                                    height: 36,
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          VaultIcons.add,
+                                          size: 14,
+                                          color: Colors.blueAccent,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          '新建自定义分组...',
+                                          style: TextStyle(
+                                            color: Colors.blueAccent,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                child: Container(
+                                  height: 38,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF282C34),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: const Color(0xFF3E4451),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _groupController.text.trim().isEmpty
+                                              ? '无分组'
+                                              : _groupController.text.trim(),
+                                          style: TextStyle(
+                                            color: _groupController.text
+                                                    .trim()
+                                                    .isEmpty
+                                                ? Colors.grey.shade400
+                                                : Colors.white,
+                                            fontSize: 12,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const Icon(
+                                        VaultIcons.chevronDown,
+                                        size: 16,
+                                        color: VaultIcons.muted,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -201,40 +430,6 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
                   ),
                 ],
               ),
-              if (availableGroups.isNotEmpty && !isEditing) ...[
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  children: availableGroups.take(5).map((g) {
-                    return InkWell(
-                      borderRadius: BorderRadius.circular(4),
-                      onTap: () {
-                        setState(() {
-                          _groupController.text = g;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF282C34),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: const Color(0xFF3E4451)),
-                        ),
-                        child: Text(
-                          '+ $g',
-                          style: TextStyle(
-                            color: Colors.grey.shade400,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
               const SizedBox(height: 12),
 
               // Username and Password
