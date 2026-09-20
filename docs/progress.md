@@ -375,3 +375,34 @@
   - 分组输入由原纯文本框改为主流下拉选择模式（无分组、已有分组列表、新建自定义分组）。
   - 支持直接选择已有分组，同时支持点击「新建自定义分组...」切换为输入框自由新建。
 - **测试与构建**：51 项测试全绿，0 静态检查警告，构建 Linux release 并整体部署至 releases/1.0.4-dropdown-20260920。
+
+## 管理后台主密码二次认证（2026-09-20）
+
+- **需求背景**：当他人借用电脑使用快捷面板查询公共设备账号时，防止其直接进入管理后台查看或篡改全量敏感凭据。
+- **改动实现**：
+  - 新增 `ManagementAuthDialog` 二次认证弹窗，使用主密码进行验证。
+  - 在 `EncryptedFileVaultRepository` 与 `VaultSessionController` 中增加 `verifyMasterPassword` 接口，基于 Argon2id 派生密钥进行恒定时间校验。
+  - 主界面点击「管理页面」时拦截并弹出验证，验证成功方可进入管理后台；返回快捷面板时重置鉴权状态。
+  - 自动化测试与验证：全量测试通过，发布部署至 `releases/1.0.5-secondary-auth-20260920`。
+
+## 分组级安全隔离与锁定 (Group-level Lock Isolation)（2026-09-20）
+
+- **需求背景**：支持用户针对不同分组设置独立安全锁定（如公共设备分组同事可直接查用，而个人/财务分组需单独输密码才可访问）。
+- **改动实现**：
+  - **数据层**：`DecryptedVaultPayload` 新增 `protectedGroups: Set<String>` 字段，受保护配置随数据库全量加密，向后兼容旧版；`EncryptedFileVaultRepository` 事务持久化支持。
+  - **控制层**：`VaultSessionController` 实现 `_protectedGroups` 与 `_unlockedGroups` 隔离逻辑；非管理模式下 `_applyFilter` 彻底排除未解锁保护分组的条目；分组切换时立即重新上锁（“离开即锁”）。
+  - **交互层**：
+    - `QuickPanelView` 分组 Chips 显示 🔒/🔓 状态，点击锁定分组弹出定制标题主密码解锁；
+    - 管理页增加「分组安全配置」弹窗（`ProtectedGroupsDialog`），支持自由切换保护状态及新建受保护分组；
+    - 各处分组下拉/卡片增加保护徽章状态识别。
+  - 全套集成测试覆盖数据持久化、隔离过滤、UI 解锁流，65/65 全部通过，发布部署至 `releases/1.0.6-group-locks-20260920`。
+
+## 代码审查、Bug 修复与安全加固（2026-09-20）
+
+- **审查与修复**：
+  - **Bug 修复**：管理模式下修改分组保护状态不再意外重置当前选中分组；保存保护配置失败时向用户展示错误反馈且不关闭弹窗；移除冗余的状态重置调用。
+  - **防暴力破解**：`ManagementAuthDialog` 增加密码重试频率限制，连续 3 次失败后启动指数退避冷却（5s/10s/30s/60s）。
+  - **安全默认设计**：`VaultSessionController` 的 `isMockMode` 默认值设为 `false`（secure-by-default）。
+  - **物理落盘**：事务写入使用 `writeAsString(..., flush: true)` 确保 fsync 落盘。
+  - **UI 优化**：分组标签精准展示黄色锁定（🔒）与绿色解锁（🔓）状态。
+- **验证**：`flutter analyze` 0 issues，65 项单元/Widget/集成测试全数通过。
