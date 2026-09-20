@@ -33,6 +33,7 @@ class EncryptedFileVaultRepository implements VaultRepository {
   String? _vaultId;
   int _revision = 0;
   List<VaultEntry> _entries = [];
+  Set<String> _protectedGroups = {};
 
   // Fault injection hooks for unit testing failure scenarios
   void Function()? onBeforeWriteTemp;
@@ -48,6 +49,17 @@ class EncryptedFileVaultRepository implements VaultRepository {
   Uint8List? get sessionKey => _sessionKey;
   Uint8List? get salt => _salt;
 
+  @override
+  Set<String> get protectedGroups => Set.unmodifiable(_protectedGroups);
+
+  @override
+  Future<void> setProtectedGroups(Set<String> groups) async {
+    if (!isUnlocked) throw const VaultLockedException();
+    return _enqueue(() async {
+      await _commitTransaction(_entries, nextProtectedGroups: groups);
+    });
+  }
+
   /// Closes session and clears memory references
   void lock() {
     _sessionKey = null;
@@ -55,6 +67,7 @@ class EncryptedFileVaultRepository implements VaultRepository {
     _vaultId = null;
     _revision = 0;
     _entries = [];
+    _protectedGroups = {};
   }
 
   /// Verifies whether the candidate password matches the current session key
@@ -126,6 +139,7 @@ class EncryptedFileVaultRepository implements VaultRepository {
     _salt = payload.salt;
     _vaultId = payload.payload.vaultId;
     _revision = payload.payload.revision;
+    _protectedGroups = Set<String>.from(payload.payload.protectedGroups);
     _entries = payload.payload.entries;
 
     // Clean up any orphan temp files on startup
@@ -228,10 +242,11 @@ class EncryptedFileVaultRepository implements VaultRepository {
       _salt = decrypted.salt;
       _vaultId = decrypted.payload.vaultId;
       _revision = decrypted.payload.revision;
+      _protectedGroups = Set<String>.from(decrypted.payload.protectedGroups);
       _entries = decrypted.payload.entries;
 
       // Commit as new main revision
-      await _commitTransaction(_entries);
+      await _commitTransaction(_entries, nextProtectedGroups: _protectedGroups);
     });
   }
 
@@ -329,10 +344,11 @@ class EncryptedFileVaultRepository implements VaultRepository {
       _salt = decrypted.salt;
       _vaultId = decrypted.payload.vaultId;
       _revision = decrypted.payload.revision;
+      _protectedGroups = Set<String>.from(decrypted.payload.protectedGroups);
       _entries = decrypted.payload.entries;
 
       // Commit as active main vault
-      await _commitTransaction(_entries);
+      await _commitTransaction(_entries, nextProtectedGroups: _protectedGroups);
 
       return safetyBackupFile;
     });
@@ -346,12 +362,17 @@ class EncryptedFileVaultRepository implements VaultRepository {
   /// 5. If main vault exists, copy main vault to temp file, flush, and atomically rename to previous.
   /// 6. Atomically rename new temp file to overwrite main vault.
   /// 7. Update in-memory state and publish success.
-  Future<void> _commitTransaction(List<VaultEntry> nextEntries) async {
+  Future<void> _commitTransaction(
+    List<VaultEntry> nextEntries, {
+    Set<String>? nextProtectedGroups,
+  }) async {
+    final targetProtectedGroups = nextProtectedGroups ?? _protectedGroups;
     final nextRevision = _revision + 1;
     final nextPayload = DecryptedVaultPayload(
       schemaVersion: DecryptedVaultPayload.currentSchemaVersion,
       vaultId: _vaultId!,
       revision: nextRevision,
+      protectedGroups: targetProtectedGroups,
       entries: nextEntries,
     );
 
@@ -378,15 +399,15 @@ class EncryptedFileVaultRepository implements VaultRepository {
     // 4. Self-verify temp file before any replacement
     try {
       final verifyContent = await tempFile.readAsString();
-      final verifyPkg = EncryptedVaultPackage.deserialize(verifyContent);
-      final verifiedPayload = await VaultCryptoService.decrypt(
-        package: verifyPkg,
+      final verifyPackage = EncryptedVaultPackage.deserialize(verifyContent);
+      final decrypted = await VaultCryptoService.decrypt(
+        package: verifyPackage,
         keyBytes: _sessionKey!,
       );
-      if (verifiedPayload.revision != nextRevision) {
-        throw const CorruptedFormatException('自检临时文件 revision 校验失败');
+      if (decrypted.revision != nextRevision) {
+        throw const CorruptedFormatException('自检版本号与预期不符');
       }
-    } catch (e) {
+    } catch (_) {
       try {
         await tempFile.delete();
       } catch (_) {}
@@ -412,6 +433,7 @@ class EncryptedFileVaultRepository implements VaultRepository {
     // 7. Publish updated in-memory state
     _revision = nextRevision;
     _entries = List.unmodifiable(nextEntries);
+    _protectedGroups = Set<String>.from(targetProtectedGroups);
   }
 
   /// Serializes operations to avoid concurrent file overwrite races

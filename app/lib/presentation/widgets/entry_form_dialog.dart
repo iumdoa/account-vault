@@ -326,34 +326,46 @@ class _EntryFormDialogState extends State<EntryFormDialog> {
                                     ),
                                   ),
                                   ...availableGroups.map(
-                                    (g) => PopupMenuItem<String?>(
-                                      value: g,
-                                      height: 36,
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              g,
-                                              style: TextStyle(
-                                                color: _groupController.text
-                                                            .trim() ==
-                                                        g
-                                                    ? Colors.blueAccent
-                                                    : Colors.white,
-                                                fontSize: 12,
+                                    (g) {
+                                      final isProtected = widget.controller
+                                          .isGroupProtected(g);
+                                      return PopupMenuItem<String?>(
+                                        value: g,
+                                        height: 36,
+                                        child: Row(
+                                          children: [
+                                            if (isProtected) ...[
+                                              const Icon(
+                                                VaultIcons.lock,
+                                                size: 12,
+                                                color: Colors.amberAccent,
                                               ),
-                                              overflow: TextOverflow.ellipsis,
+                                              const SizedBox(width: 4),
+                                            ],
+                                            Expanded(
+                                              child: Text(
+                                                g,
+                                                style: TextStyle(
+                                                  color: _groupController.text
+                                                              .trim() ==
+                                                          g
+                                                      ? Colors.blueAccent
+                                                      : Colors.white,
+                                                  fontSize: 12,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
                                             ),
-                                          ),
-                                          if (_groupController.text.trim() == g)
-                                            const Icon(
-                                              VaultIcons.check,
-                                              size: 14,
-                                              color: Colors.blueAccent,
-                                            ),
-                                        ],
-                                      ),
-                                    ),
+                                            if (_groupController.text.trim() == g)
+                                              const Icon(
+                                                VaultIcons.check,
+                                                size: 14,
+                                                color: Colors.blueAccent,
+                                              ),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   ),
                                   const PopupMenuDivider(height: 1),
                                   const PopupMenuItem<String?>(

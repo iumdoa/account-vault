@@ -6,4 +6,6 @@ abstract class VaultRepository {
   Future<VaultEntry?> getById(String id);
   Future<void> save(VaultEntry entry);
   Future<void> delete(String id);
+  Set<String> get protectedGroups;
+  Future<void> setProtectedGroups(Set<String> groups);
 }

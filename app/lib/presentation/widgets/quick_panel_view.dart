@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../../application/vault_session_controller.dart';
 import '../../domain/models/vault_entry.dart';
 import 'copy_icon.dart';
+import 'management_auth_dialog.dart';
 import 'vault_icons.dart';
 
 /// Quick Search and Copy Panel View (README Section 3.2)
@@ -193,18 +194,41 @@ class _QuickPanelViewState extends State<QuickPanelView> {
                   _buildGroupChip(
                     label: '全部',
                     isSelected: controller.selectedGroup == null,
+                    isProtected: false,
+                    isLocked: false,
                     onTap: () => controller.setGroupFilter(null),
                   ),
                   const SizedBox(width: 6),
                   ...availableGroups.map((group) {
                     final isSelected = controller.selectedGroup == group;
+                    final isProtected = controller.isGroupProtected(group);
+                    final isLocked = controller.isGroupLocked(group);
                     return Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: _buildGroupChip(
                         label: group,
                         isSelected: isSelected,
-                        onTap: () {
-                          controller.setGroupFilter(isSelected ? null : group);
+                        isProtected: isProtected,
+                        isLocked: isLocked,
+                        onTap: () async {
+                          if (isSelected) {
+                            controller.setGroupFilter(null);
+                            return;
+                          }
+                          if (isLocked) {
+                            final ok = await ManagementAuthDialog.show(
+                              context,
+                              controller: controller,
+                              title: '解锁「$group」',
+                              subtitle: '该分组已被安全锁定，需验证主密码后访问',
+                              icon: VaultIcons.lock,
+                            );
+                            if (ok && mounted) {
+                              controller.unlockAndSelectGroupDirectly(group);
+                            }
+                          } else {
+                            controller.setGroupFilter(group);
+                          }
                         },
                       ),
                     );
@@ -264,6 +288,8 @@ class _QuickPanelViewState extends State<QuickPanelView> {
                       return _EntryListItem(
                         entry: entry,
                         isSelected: isSelected,
+                        isProtectedGroup: entry.group != null &&
+                            controller.isGroupProtected(entry.group!),
                         onTap: () => controller.selectIndex(index),
                         onCopyAccount: () => controller.copyUsername(entry),
                         onCopyPassword: () async {
@@ -313,6 +339,8 @@ class _QuickPanelViewState extends State<QuickPanelView> {
   Widget _buildGroupChip({
     required String label,
     required bool isSelected,
+    bool isProtected = false,
+    bool isLocked = false,
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -331,13 +359,28 @@ class _QuickPanelViewState extends State<QuickPanelView> {
           ),
         ),
         child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.grey.shade400,
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isProtected) ...[
+                Icon(
+                  isLocked ? VaultIcons.lock : VaultIcons.lockOpen,
+                  size: 11,
+                  color: isSelected
+                      ? Colors.white
+                      : (isLocked ? Colors.amberAccent : Colors.greenAccent),
+                ),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.grey.shade400,
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -348,6 +391,7 @@ class _QuickPanelViewState extends State<QuickPanelView> {
 class _EntryListItem extends StatelessWidget {
   final VaultEntry entry;
   final bool isSelected;
+  final bool isProtectedGroup;
   final VoidCallback onTap;
   final VoidCallback onCopyAccount;
   final VoidCallback onCopyPassword;
@@ -355,6 +399,7 @@ class _EntryListItem extends StatelessWidget {
   const _EntryListItem({
     required this.entry,
     required this.isSelected,
+    this.isProtectedGroup = false,
     required this.onTap,
     required this.onCopyAccount,
     required this.onCopyPassword,
@@ -433,12 +478,27 @@ class _EntryListItem extends StatelessWidget {
                               color: const Color(0xFF2C313A),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(
-                              entry.group!,
-                              style: TextStyle(
-                                color: Colors.grey.shade400,
-                                fontSize: 10,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isProtectedGroup) ...[
+                                  const Icon(
+                                    VaultIcons.lock,
+                                    size: 10,
+                                    color: Colors.amberAccent,
+                                  ),
+                                  const SizedBox(width: 3),
+                                ],
+                                Text(
+                                  entry.group!,
+                                  style: TextStyle(
+                                    color: isProtectedGroup
+                                        ? Colors.amberAccent
+                                        : Colors.grey.shade400,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],

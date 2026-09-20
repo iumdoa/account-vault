@@ -3,20 +3,37 @@ import 'package:flutter/material.dart';
 import '../../application/vault_session_controller.dart';
 import 'vault_icons.dart';
 
-/// Modal dialog for verifying master password before entering management console
+/// Modal dialog for verifying master password before entering management console or protected group
 class ManagementAuthDialog extends StatefulWidget {
   final VaultSessionController controller;
+  final String title;
+  final String subtitle;
+  final IconData icon;
 
-  const ManagementAuthDialog({super.key, required this.controller});
+  const ManagementAuthDialog({
+    super.key,
+    required this.controller,
+    this.title = '管理权限验证',
+    this.subtitle = '进入账号库管理后台需验证主密码',
+    this.icon = VaultIcons.shield,
+  });
 
   static Future<bool> show(
     BuildContext context, {
     required VaultSessionController controller,
+    String title = '管理权限验证',
+    String subtitle = '进入账号库管理后台需验证主密码',
+    IconData icon = VaultIcons.shield,
   }) async {
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
-      builder: (ctx) => ManagementAuthDialog(controller: controller),
+      builder: (ctx) => ManagementAuthDialog(
+        controller: controller,
+        title: title,
+        subtitle: subtitle,
+        icon: icon,
+      ),
     );
     return result ?? false;
   }
@@ -90,16 +107,19 @@ class _ManagementAuthDialogState extends State<ManagementAuthDialog> {
         borderRadius: BorderRadius.circular(14),
         side: const BorderSide(color: Color(0xFF3E4451)),
       ),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(VaultIcons.shield, color: Colors.blueAccent, size: 22),
-          SizedBox(width: 8),
-          Text(
-            '管理权限验证',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+          Icon(widget.icon, color: Colors.blueAccent, size: 22),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              widget.title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -111,7 +131,7 @@ class _ManagementAuthDialogState extends State<ManagementAuthDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              '进入账号库管理后台需验证主密码',
+              widget.subtitle,
               style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
             ),
             const SizedBox(height: 14),

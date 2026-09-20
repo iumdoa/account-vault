@@ -18,6 +18,7 @@ abstract final class VaultIcons {
   static const person = CupertinoIcons.person;
   static const password = CupertinoIcons.lock;
   static const lock = CupertinoIcons.lock;
+  static const lockOpen = CupertinoIcons.lock_open;
   static const shield = CupertinoIcons.shield;
   static const eye = CupertinoIcons.eye;
   static const eyeOff = CupertinoIcons.eye_slash;

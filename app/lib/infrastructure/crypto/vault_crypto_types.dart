@@ -297,12 +297,14 @@ class DecryptedVaultPayload {
   final int schemaVersion;
   final String vaultId;
   final int revision;
+  final Set<String> protectedGroups;
   final List<VaultEntry> entries;
 
   const DecryptedVaultPayload({
     required this.schemaVersion,
     required this.vaultId,
     required this.revision,
+    this.protectedGroups = const {},
     required this.entries,
   });
 
@@ -311,6 +313,8 @@ class DecryptedVaultPayload {
       'schemaVersion': schemaVersion,
       'vaultId': vaultId,
       'revision': revision,
+      if (protectedGroups.isNotEmpty)
+        'protectedGroups': protectedGroups.toList()..sort(),
       'entries': entries.map((e) => e.toJson()).toList(),
     };
     return Uint8List.fromList(utf8.encode(jsonEncode(map)));
@@ -346,6 +350,16 @@ class DecryptedVaultPayload {
       throw const CorruptedFormatException('非法 revision 序号');
     }
 
+    final rawProtected = decoded['protectedGroups'];
+    final Set<String> protectedGroups = {};
+    if (rawProtected is List) {
+      for (final g in rawProtected) {
+        if (g is String && g.trim().isNotEmpty) {
+          protectedGroups.add(g.trim());
+        }
+      }
+    }
+
     final rawEntries = decoded['entries'];
     if (rawEntries is! List<dynamic>) {
       throw const CorruptedFormatException('entries 必须为列表');
@@ -367,6 +381,7 @@ class DecryptedVaultPayload {
       schemaVersion: schemaVer,
       vaultId: vaultId,
       revision: revision,
+      protectedGroups: protectedGroups,
       entries: entries,
     );
   }

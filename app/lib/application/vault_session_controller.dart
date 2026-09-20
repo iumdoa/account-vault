@@ -29,10 +29,14 @@ class VaultSessionController extends ChangeNotifier {
   String? _feedbackMessage;
   String? _errorMessage;
   bool _hasPreviousBackup = false;
+  bool _isManagementMode = false;
+  Set<String> _protectedGroups = {};
+  final Set<String> _unlockedGroups = {};
 
   VaultSessionController({required this.repository, this.isMockMode = true}) {
     if (isMockMode) {
       _state = VaultSessionState.unlocked;
+      _protectedGroups = Set<String>.from(repository.protectedGroups);
     }
   }
 
@@ -41,8 +45,16 @@ class VaultSessionController extends ChangeNotifier {
   bool get isLocked => _state == VaultSessionState.locked;
   bool get isUninitialized => _state == VaultSessionState.uninitialized;
   bool get isBusy => _isBusy;
+  bool get isManagementMode => _isManagementMode;
   String? get errorMessage => _errorMessage;
   bool get hasPreviousBackup => _hasPreviousBackup;
+  Set<String> get protectedGroups => Set.unmodifiable(_protectedGroups);
+  Set<String> get unlockedGroups => Set.unmodifiable(_unlockedGroups);
+
+  bool isGroupProtected(String group) => _protectedGroups.contains(group);
+  bool isGroupUnlocked(String group) => _unlockedGroups.contains(group);
+  bool isGroupLocked(String group) =>
+      isGroupProtected(group) && !isGroupUnlocked(group);
 
   EncryptedFileVaultRepository? get _encryptedRepo =>
       repository is EncryptedFileVaultRepository
@@ -76,6 +88,7 @@ class VaultSessionController extends ChangeNotifier {
         groups.add(entry.group!.trim());
       }
     }
+    groups.addAll(_protectedGroups);
     final list = groups.toList()..sort();
     return list;
   }
@@ -243,10 +256,14 @@ class VaultSessionController extends ChangeNotifier {
   void lock() {
     _encryptedRepo?.lock();
     _state = VaultSessionState.locked;
+    _isManagementMode = false;
     _allEntries = [];
     _filteredEntries = [];
     _currentQuery = '';
+    _selectedGroup = null;
     _selectedIndex = 0;
+    _protectedGroups = {};
+    _unlockedGroups.clear();
     _errorMessage = null;
     notifyListeners();
   }
@@ -352,11 +369,26 @@ class VaultSessionController extends ChangeNotifier {
 
     try {
       _allEntries = await repository.getAll();
+      _protectedGroups = Set<String>.from(repository.protectedGroups);
       _applyFilter();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Sets management console mode
+  void setManagementMode(bool enabled) {
+    if (_isManagementMode == enabled) return;
+    _isManagementMode = enabled;
+    if (!enabled) {
+      _unlockedGroups.clear();
+      if (_selectedGroup != null && _protectedGroups.contains(_selectedGroup)) {
+        _selectedGroup = null;
+      }
+    }
+    _applyFilter();
+    notifyListeners();
   }
 
   /// Sets search query and re-runs pure search
@@ -368,13 +400,63 @@ class VaultSessionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Filters by group in management view
+  /// Filters by group in quick panel or management view
   void setGroupFilter(String? group) {
     if (_selectedGroup == group) return;
+    _unlockedGroups.clear();
     _selectedGroup = group;
     _selectedIndex = 0;
     _applyFilter();
     notifyListeners();
+  }
+
+  /// Unlocks a protected group for the current active view and switches to it
+  void unlockAndSelectGroupDirectly(String group) {
+    _unlockedGroups.add(group);
+    _selectedGroup = group;
+    _selectedIndex = 0;
+    _applyFilter();
+    notifyListeners();
+  }
+
+  /// Relocks all protected groups and reverts filter to All if currently on a locked group
+  void relockProtectedGroups() {
+    var changed = false;
+    if (_unlockedGroups.isNotEmpty) {
+      _unlockedGroups.clear();
+      changed = true;
+    }
+    if (_selectedGroup != null && _protectedGroups.contains(_selectedGroup)) {
+      _selectedGroup = null;
+      changed = true;
+    }
+    if (changed) {
+      _selectedIndex = 0;
+      _applyFilter();
+      notifyListeners();
+    }
+  }
+
+  /// Updates which groups are protected by password verification
+  Future<void> updateProtectedGroups(Set<String> groups) async {
+    _isBusy = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await repository.setProtectedGroups(groups);
+      _protectedGroups = Set<String>.from(groups);
+      if (_selectedGroup != null && isGroupLocked(_selectedGroup!)) {
+        _selectedGroup = null;
+      }
+      _applyFilter();
+      _setFeedback('已更新分组安全锁定配置');
+    } catch (e) {
+      _errorMessage = '更新分组安全配置失败: $e';
+    } finally {
+      _isBusy = false;
+      notifyListeners();
+    }
   }
 
   /// Moves keyboard selection down
@@ -497,7 +579,20 @@ class VaultSessionController extends ChangeNotifier {
   void _applyFilter() {
     List<VaultEntry> candidates = _allEntries;
     if (_selectedGroup != null && _selectedGroup!.isNotEmpty) {
-      candidates = candidates.where((e) => e.group == _selectedGroup).toList();
+      if (!_isManagementMode && isGroupLocked(_selectedGroup!)) {
+        candidates = [];
+      } else {
+        candidates = candidates.where((e) => e.group == _selectedGroup).toList();
+      }
+    } else {
+      if (!_isManagementMode) {
+        candidates = candidates.where((e) {
+          if (e.group != null && isGroupLocked(e.group!)) {
+            return false;
+          }
+          return true;
+        }).toList();
+      }
     }
 
     _filteredEntries = EntrySearchService.search(candidates, _currentQuery);

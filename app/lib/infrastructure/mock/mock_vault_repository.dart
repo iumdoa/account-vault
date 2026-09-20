@@ -291,4 +291,14 @@ class MockVaultRepository implements VaultRepository {
   Future<void> delete(String id) async {
     _entries.removeWhere((e) => e.id == id);
   }
+
+  Set<String> _protectedGroups = {};
+
+  @override
+  Set<String> get protectedGroups => Set.unmodifiable(_protectedGroups);
+
+  @override
+  Future<void> setProtectedGroups(Set<String> groups) async {
+    _protectedGroups = Set<String>.from(groups);
+  }
 }

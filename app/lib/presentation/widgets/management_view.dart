@@ -7,6 +7,7 @@ import 'backup_export_dialog.dart';
 import 'backup_restore_dialog.dart';
 import 'entry_form_dialog.dart';
 import 'copy_icon.dart';
+import 'protected_groups_dialog.dart';
 import 'settings_dialog.dart';
 import 'vault_icons.dart';
 
@@ -146,6 +147,17 @@ class ManagementView extends StatelessWidget {
             const SizedBox(width: 4),
             IconButton(
               icon: const Icon(
+                VaultIcons.shield,
+                color: VaultIcons.muted,
+                size: 20,
+              ),
+              tooltip: '分组安全锁定设置',
+              onPressed: () =>
+                  ProtectedGroupsDialog.show(context, controller: controller),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(
                 VaultIcons.settings,
                 color: VaultIcons.muted,
                 size: 20,
@@ -240,32 +252,43 @@ class ManagementView extends StatelessWidget {
                     ),
                   ),
                   ...groups.map(
-                    (g) => PopupMenuItem<String?>(
-                      value: g,
-                      height: 36,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              g,
-                              style: TextStyle(
-                                color: controller.selectedGroup == g
-                                    ? Colors.blueAccent
-                                    : Colors.white,
-                                fontSize: 12,
+                    (g) {
+                      final isProtected = controller.isGroupProtected(g);
+                      return PopupMenuItem<String?>(
+                        value: g,
+                        height: 36,
+                        child: Row(
+                          children: [
+                            if (isProtected) ...[
+                              const Icon(
+                                VaultIcons.lock,
+                                size: 12,
+                                color: Colors.amberAccent,
                               ),
-                              overflow: TextOverflow.ellipsis,
+                              const SizedBox(width: 4),
+                            ],
+                            Expanded(
+                              child: Text(
+                                g,
+                                style: TextStyle(
+                                  color: controller.selectedGroup == g
+                                      ? Colors.blueAccent
+                                      : Colors.white,
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                          if (controller.selectedGroup == g)
-                            const Icon(
-                              VaultIcons.check,
-                              size: 14,
-                              color: Colors.blueAccent,
-                            ),
-                        ],
-                      ),
-                    ),
+                            if (controller.selectedGroup == g)
+                              const Icon(
+                                VaultIcons.check,
+                                size: 14,
+                                color: Colors.blueAccent,
+                              ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ],
                 child: Container(
@@ -340,6 +363,8 @@ class ManagementView extends StatelessWidget {
                     final entry = controller.filteredEntries[index];
                     return _ManagementItemCard(
                       entry: entry,
+                      isProtectedGroup: entry.group != null &&
+                          controller.isGroupProtected(entry.group!),
                       onEdit: () => EntryFormDialog.show(
                         context,
                         controller: controller,
@@ -360,6 +385,7 @@ class ManagementView extends StatelessWidget {
 
 class _ManagementItemCard extends StatefulWidget {
   final VaultEntry entry;
+  final bool isProtectedGroup;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onCopyAccount;
@@ -367,6 +393,7 @@ class _ManagementItemCard extends StatefulWidget {
 
   const _ManagementItemCard({
     required this.entry,
+    this.isProtectedGroup = false,
     required this.onEdit,
     required this.onDelete,
     required this.onCopyAccount,
@@ -418,9 +445,27 @@ class _ManagementItemCardState extends State<_ManagementItemCard> {
                     color: const Color(0xFF2C313A),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(
-                    entry.group!,
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.isProtectedGroup) ...[
+                        const Icon(
+                          VaultIcons.lock,
+                          size: 10,
+                          color: Colors.amberAccent,
+                        ),
+                        const SizedBox(width: 3),
+                      ],
+                      Text(
+                        entry.group!,
+                        style: TextStyle(
+                          color: widget.isProtectedGroup
+                              ? Colors.amberAccent
+                              : Colors.grey.shade400,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               const Spacer(),
