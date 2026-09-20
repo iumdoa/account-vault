@@ -121,7 +121,6 @@ class _AppRootScaffoldState extends State<AppRootScaffold> {
     if (call.method == 'onShow') {
       if (mounted) {
         widget.controller.setManagementMode(false);
-        widget.controller.relockProtectedGroups();
         setState(() {
           // Returning to quick panel view on hotkey show
           _isManagementView = false;
@@ -151,7 +150,6 @@ class _AppRootScaffoldState extends State<AppRootScaffold> {
 
   Future<void> _hideWindow() async {
     widget.controller.setManagementMode(false);
-    widget.controller.relockProtectedGroups();
     try {
       await _windowChannel.invokeMethod('hideWindow');
     } catch (e) {
@@ -195,7 +193,6 @@ class _AppRootScaffoldState extends State<AppRootScaffold> {
                 controller: widget.controller,
                 onBackToQuickPanel: () {
                   widget.controller.setManagementMode(false);
-                  widget.controller.relockProtectedGroups();
                   setState(() {
                     _isManagementView = false;
                   });

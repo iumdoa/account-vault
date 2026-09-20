@@ -46,8 +46,13 @@ class _ManagementAuthDialogState extends State<ManagementAuthDialog> {
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
+  static const int _maxAttemptsBeforeCooldown = 3;
+  static const List<int> _cooldownSeconds = [5, 10, 30, 60];
+
   bool _obscurePassword = true;
   bool _isVerifying = false;
+  bool _isCoolingDown = false;
+  int _failureCount = 0;
   String? _errorMessage;
 
   @override
@@ -55,6 +60,32 @@ class _ManagementAuthDialogState extends State<ManagementAuthDialog> {
     _passwordController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  int _getCooldownDuration() {
+    final idx = _failureCount - _maxAttemptsBeforeCooldown;
+    if (idx < 0) return 0;
+    return _cooldownSeconds[idx.clamp(0, _cooldownSeconds.length - 1)];
+  }
+
+  Future<void> _startCooldown() async {
+    final seconds = _getCooldownDuration();
+    if (seconds <= 0) return;
+
+    setState(() {
+      _isCoolingDown = true;
+      _errorMessage = '连续验证失败过多，请等待 $seconds 秒后重试';
+    });
+
+    await Future.delayed(Duration(seconds: seconds));
+
+    if (mounted) {
+      setState(() {
+        _isCoolingDown = false;
+        _errorMessage = null;
+      });
+      _focusNode.requestFocus();
+    }
   }
 
   Future<void> _handleVerify() async {
@@ -78,11 +109,16 @@ class _ManagementAuthDialogState extends State<ManagementAuthDialog> {
       if (isValid) {
         Navigator.of(context).pop(true);
       } else {
+        _failureCount++;
         setState(() {
           _errorMessage = '主密码错误，请重新输入';
           _passwordController.clear();
         });
-        _focusNode.requestFocus();
+        if (_failureCount >= _maxAttemptsBeforeCooldown) {
+          await _startCooldown();
+        } else {
+          _focusNode.requestFocus();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -163,7 +199,7 @@ class _ManagementAuthDialogState extends State<ManagementAuthDialog> {
               focusNode: _focusNode,
               autofocus: true,
               obscureText: _obscurePassword,
-              enabled: !_isVerifying,
+              enabled: !_isVerifying && !_isCoolingDown,
               style: const TextStyle(fontSize: 14, color: Colors.white),
               decoration: InputDecoration(
                 hintText: '输入主密码',
@@ -218,7 +254,7 @@ class _ManagementAuthDialogState extends State<ManagementAuthDialog> {
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          onPressed: _isVerifying ? null : _handleVerify,
+          onPressed: (_isVerifying || _isCoolingDown) ? null : _handleVerify,
           child: _isVerifying
               ? const SizedBox(
                   width: 14,

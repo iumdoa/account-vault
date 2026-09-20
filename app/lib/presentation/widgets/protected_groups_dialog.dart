@@ -69,8 +69,15 @@ class _ProtectedGroupsDialogState extends State<ProtectedGroupsDialog> {
       if (mounted) {
         Navigator.of(context).pop(true);
       }
-    } catch (_) {
-      // Handled in controller
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('保存失败: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {

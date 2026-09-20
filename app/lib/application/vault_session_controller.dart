@@ -33,7 +33,7 @@ class VaultSessionController extends ChangeNotifier {
   Set<String> _protectedGroups = {};
   final Set<String> _unlockedGroups = {};
 
-  VaultSessionController({required this.repository, this.isMockMode = true}) {
+  VaultSessionController({required this.repository, this.isMockMode = false}) {
     if (isMockMode) {
       _state = VaultSessionState.unlocked;
       _protectedGroups = Set<String>.from(repository.protectedGroups);
@@ -446,13 +446,14 @@ class VaultSessionController extends ChangeNotifier {
     try {
       await repository.setProtectedGroups(groups);
       _protectedGroups = Set<String>.from(groups);
-      if (_selectedGroup != null && isGroupLocked(_selectedGroup!)) {
+      if (!_isManagementMode && _selectedGroup != null && isGroupLocked(_selectedGroup!)) {
         _selectedGroup = null;
       }
       _applyFilter();
       _setFeedback('已更新分组安全锁定配置');
     } catch (e) {
       _errorMessage = '更新分组安全配置失败: $e';
+      rethrow;
     } finally {
       _isBusy = false;
       notifyListeners();
