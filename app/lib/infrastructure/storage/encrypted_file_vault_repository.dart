@@ -388,10 +388,7 @@ class EncryptedFileVaultRepository implements VaultRepository {
 
     // 3. Write to unique temp file
     final tempFile = pathProvider.generateTempFile();
-    final sink = tempFile.openWrite(mode: FileMode.writeOnly);
-    sink.write(fileBytes);
-    await sink.flush();
-    await sink.close();
+    await tempFile.writeAsString(fileBytes, flush: true);
     await VaultPathProvider.secureFilePermissions(tempFile);
 
     onAfterWriteTemp?.call();

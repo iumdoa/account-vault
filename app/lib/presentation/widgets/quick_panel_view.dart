@@ -366,9 +366,7 @@ class _QuickPanelViewState extends State<QuickPanelView> {
                 Icon(
                   isLocked ? VaultIcons.lock : VaultIcons.lockOpen,
                   size: 11,
-                  color: isSelected
-                      ? Colors.white
-                      : (isLocked ? Colors.amberAccent : Colors.greenAccent),
+                  color: isLocked ? Colors.amberAccent : Colors.greenAccent,
                 ),
                 const SizedBox(width: 4),
               ],
